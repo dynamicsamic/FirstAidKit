@@ -1,6 +1,10 @@
 import pytest
 from pytest_asyncio import is_async_test
 
+from src.settings import settings
+
+DEFAULT_LIMIT = settings.PAGINATION_LIMIT
+
 
 def pytest_collection_modifyitems(items):
     """

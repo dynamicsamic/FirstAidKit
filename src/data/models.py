@@ -5,15 +5,12 @@ from sqlalchemy import DateTime, Enum, ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from domain.types import DosageForm
-from src.settings import settings
-
-
-def now():
-    return datetime.now(tz=settings.TZ)
+from src.utils import now
 
 
 class Base(DeclarativeBase):
     pass
+
 
 class BaseModel(Base):
     __abstract__ = True
@@ -24,13 +21,16 @@ class BaseModel(Base):
         DateTime(timezone=True), default=now, onupdate=now
     )
 
+
 class Producer(BaseModel):
     __tablename__ = "producers"
 
     # producer_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(250), unique=True)
     # meds: Mapped[list["Medication"]] = relationship(back_populates="producer", lazy="noload")
-    meds: Mapped[Generator["Medication", None, None]] = relationship(back_populates="producer", lazy="noload")
+    meds: Mapped[Generator["Medication", None, None]] = relationship(
+        back_populates="producer", lazy="noload"
+    )
 
 
 class Category(BaseModel):
@@ -38,7 +38,9 @@ class Category(BaseModel):
 
     # category_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(60), unique=True)
-    meds: Mapped[Generator["Medication", None, None]] = relationship(back_populates="category", lazy="noload")
+    meds: Mapped[Generator["Medication", None, None]] = relationship(
+        back_populates="category", lazy="noload"
+    )
 
 
 class Medication(BaseModel):

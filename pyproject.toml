@@ -1,0 +1,23 @@
+[project]
+name = "first-aid-kit"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "litestar[standard]>=2.10.0",
+    "pydantic>=2.8.2",
+    "pydantic-settings>=2.4.0",
+    "sqlalchemy>=2.0.32",
+    "asyncpg>=0.29.0",
+]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=8.3.2",
+    "pytest-asyncio>=0.24.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = "."
+asyncio_default_fixture_loop_scope = "module"

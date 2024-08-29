@@ -35,9 +35,9 @@ class Repository:
     async def fetch_one_by_any(
         self,
         *filters: _ColumnExpressionArgument[bool],
+        order_by: Iterable[InstrumentedAttribute] = None,
     ) -> BaseModel | None:
-        qry = self._select(*filters)
-        return (await self.execute(qry)).scalars().first()
+        return (await self.fetch_many(*filters, order_by=order_by)).first()
 
     async def fetch_one_by_pk(self, pk: Any) -> BaseModel | None:
         return await self.fetch_one_by_any(self.model.pk == pk)
@@ -53,7 +53,7 @@ class Repository:
         self,
         *filters: _ColumnExpressionArgument[bool],
         **update_data: Any,
-    ) -> BaseModel | None:
+    ) -> ScalarResult[BaseModel]:
         res = await self.execute(
             update(self.model)
             .values(**update_data)
@@ -61,7 +61,14 @@ class Repository:
             .returning(self.model)
         )
         await self.commit()
-        return res.scalars().first()
+        return res.scalars()
+
+    async def update_one_by_pk(
+        self,
+        pk: Any,
+        **update_data: Any,
+    ) -> BaseModel | None:
+        return (await self.update(self.model.pk==pk, **update_data)).first()
 
     async def delete(self, *filters: _ColumnExpressionArgument[bool]) -> int:
         res = await self.execute(delete(self.model).where(*filters))

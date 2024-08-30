@@ -4,9 +4,9 @@ from litestar import Router, delete, get, patch, post
 from litestar.di import Provide
 from litestar.dto import DataclassDTO
 
+from service.services import ProducerService
 from src.data.providers import provide_db_session
 from src.domain.models import MedicationProducer
-from src.service.producer import ProducerService
 from src.service.providers import provide_producer_service
 
 from ..query_filters import list_producers_deps

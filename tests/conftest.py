@@ -3,7 +3,7 @@ from pytest_asyncio import is_async_test
 
 from src.settings import settings
 
-DEFAULT_LIMIT = settings.PAGINATION_LIMIT
+DEFAULT_LIMIT = settings.ITEMS_PER_PAGE
 
 
 def pytest_collection_modifyitems(items):

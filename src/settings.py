@@ -16,7 +16,8 @@ class DevSettings(BaseSettings):
 class ProdSettings(BaseSettings):
     TZ: ZoneInfo = ZoneInfo("Europe/Moscow")
     DEBUG: bool = True
-    PAGINATION_LIMIT: int = 20
+    ITEMS_PER_PAGE: int = 20
+    PAGINATION_LIMIT: int = 100
 
 
     DB_DIALECT: str = "postgresql+asyncpg"

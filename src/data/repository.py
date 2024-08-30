@@ -22,7 +22,7 @@ class Repository:
         self,
         *filters: _ColumnExpressionArgument[bool],
         order_by: Iterable[InstrumentedAttribute] = None,
-        limit: int = settings.PAGINATION_LIMIT,
+        limit: int = settings.ITEMS_PER_PAGE,
         offset: int = 0,
     ) -> ScalarResult[BaseModel]:
         if offset:

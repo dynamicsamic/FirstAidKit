@@ -26,8 +26,7 @@ class Service:
             validated.append(self.repo.model.updated_at > updated_after)
 
         for k, v in filters.items():
-            attr = getattr(self.repo.model, k, None)
-            if not attr or not v:
+            if v is None or (attr := getattr(self.repo.model, k, None)) is None:
                 continue
 
             if isinstance(v, Iterable):
@@ -42,11 +41,10 @@ class ProducerService(Service):
     repo_type = ProducerRepository
 
     async def get_producers(
-        self, limit: int, offset: int, filters: dict[str, Any]
+        self, limit: int, offset: int, **filters: dict[str, Any]
     ) -> list[MedicationProducer]:
         filters = self.parse_filters(filters)
-        return (
-            await self.repo.fetch_many(
-                *filters, order_by=[self.repo.model.pk], limit=limit, offset=offset
-            )
-        ).all()
+        producers = await self.repo.fetch_many(
+            *filters, order_by=[self.repo.model.pk], limit=limit, offset=offset
+        )
+        return [MedicationProducer.model_validate(item) for item in producers]

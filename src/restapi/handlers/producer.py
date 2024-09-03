@@ -1,37 +1,52 @@
 from datetime import datetime
+from typing import Annotated
 
 from litestar import Router, delete, get, patch, post
+from litestar.contrib.pydantic import PydanticDTO
 from litestar.di import Provide
-from litestar.dto import DataclassDTO
+from litestar.params import Dependency
 
 from service.services import ProducerService
 from src.data.providers import provide_db_session
 from src.domain.models import MedicationProducer
 from src.service.providers import provide_producer_service
 
-from ..query_filters import list_producers_deps
-
-
-class ReadProducer(DataclassDTO[MedicationProducer]): ...
-
-
-@get(
-    "/",
-    return_dto=ReadProducer,
-    dependencies=list_producers_deps(),
+from ..query_filters import (
+    CreatedAfterParam,
+    CreatedBeforeParam,
+    IdsParam,
+    NamesParam,
+    OffsetParam,
+    PageSizeParam,
+    UpdatedAfterParam,
+    UpdatedBeforeParam,
 )
+
+ProducerDTO = PydanticDTO[MedicationProducer]
+
+
+@get("/")
 async def list_producers(
-    service: ProducerService,
-    page_size: int,
-    skip: int,
-    created: dict[str, datetime | None],
-    updated: dict[str, datetime | None],
-    id_array: list[int] | None,
-    name_array: list[str] | None,
-) -> list[ReadProducer]:
-    filters = {"pk": id_array, "name": name_array}
-    filters = filters | created | updated
-    return await service.get_producers(limit=page_size, offset=skip, filters=filters)
+    service: Annotated[ProducerService, Dependency(skip_validation=True)],
+    limit: int | None = PageSizeParam,
+    offset: int | None = OffsetParam,
+    created_before: datetime | None = CreatedBeforeParam,
+    created_after: datetime | None = CreatedAfterParam,
+    updated_before: datetime | None = UpdatedBeforeParam,
+    updated_after: datetime | None = UpdatedAfterParam,
+    pks: list[int] | None = IdsParam,
+    names: list[str] | None = NamesParam,
+) -> list[MedicationProducer]:
+    return await service.get_producers(
+        limit=limit,
+        offset=offset,
+        created_before=created_before,
+        created_after=created_after,
+        updated_before=updated_before,
+        updated_after=updated_after,
+        pk=pks,
+        name=names,
+    )
 
 
 @post("/")

@@ -1,10 +1,10 @@
 from datetime import datetime
 from typing import Annotated
 
-from litestar import Request, Router, delete, get, patch, post
+from litestar import Request, Router, delete, get, patch, post, status_codes
 from litestar.di import Provide
-from litestar.exceptions import HTTPException
-from litestar.params import Dependency
+from litestar.exceptions import HTTPException, NotFoundException
+from litestar.params import Dependency, Parameter
 
 from service.services import ProducerService
 from src.data.providers import provide_db_session
@@ -66,14 +66,15 @@ async def add_producer(
             f"Attempt to create duplicate instance failed with error: {err}"
         )
         raise HTTPException(
-            status_code=400, detail="Producer with provided data already exists"
+            status_code=status_codes.HTTP_400_BAD_REQUEST,
+            detail="Producer with provided data already exists",
         )
     except InvalidArgumentTypeError as err:
         request.logger.info(
             f"Invalid argument type detected, causing db query fail with error: {err}"
         )
         raise HTTPException(
-            status_code=400,
+            status_code=status_codes.HTTP_400_BAD_REQUEST,
             detail=(
                 "At least one of the provided arguments has incompatible "
                 "type with database representation"
@@ -84,7 +85,7 @@ async def add_producer(
             f"Extra argument detected, causing db query fail with error: {err}"
         )
         raise HTTPException(
-            status_code=400,
+            status_code=status_codes.HTTP_400_BAD_REQUEST,
             detail=(
                 "At least one of the provided arguments does not belong to "
                 "the database representation"
@@ -94,9 +95,17 @@ async def add_producer(
     return producer
 
 
-@get("/{prod_id: int}")
-async def get_producer() -> None:
-    pass
+@get("/{producer_id: int}", return_dto=ProducerDTO, raises=[NotFoundException])
+async def get_producer(
+    service: Annotated[ProducerService, Dependency(skip_validation=True)],
+    producer_id: Annotated[int, Parameter(int, gt=0, required=True)],
+) -> Producer:
+    producer = await service.get(producer_id)
+    if not producer:
+        raise NotFoundException(
+            detail=f"Producer with id {producer_id} not found",
+        )
+    return producer
 
 
 @patch("/{prod_id: int}")

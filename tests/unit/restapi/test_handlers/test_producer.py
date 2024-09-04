@@ -182,3 +182,38 @@ class TestProducerHandlers:
         resp = await test_client.post(self.list_create_url, json={"name": "new_name"})
         assert resp.status_code == status_codes.HTTP_400_BAD_REQUEST
         mock.assert_awaited_once()
+
+    @patch.object(ProducerService, "get", return_value=producer)
+    async def test_get_producer_with_existing_id_return_producer_instance(
+        self, mock: AsyncMock, test_client: AsyncTestClient
+    ):
+        producer_id = 1
+        resp = await test_client.get(f"{self.list_create_url}/{producer_id}")
+
+        assert resp.status_code == status_codes.HTTP_200_OK
+        mock.assert_awaited_once_with(producer_id)
+        assert Producer.model_validate(convert_to_producer(resp.json()))
+
+    @patch.object(ProducerService, "get", return_value=None)
+    async def test_get_producer_with_id_does_not_exist_return_404_status(
+        self, mock: AsyncMock, test_client: AsyncTestClient
+    ):
+        resp = await test_client.get(f"{self.list_create_url}/1")
+        assert resp.status_code == status_codes.HTTP_404_NOT_FOUND
+        mock.assert_awaited_once()
+
+    @patch.object(ProducerService, "get", return_value=None)
+    async def test_get_producer_with_negative_id_return_400_status(
+        self, mock: AsyncMock, test_client: AsyncTestClient
+    ):
+        resp = await test_client.get(f"{self.list_create_url}/-1")
+        assert resp.status_code == status_codes.HTTP_400_BAD_REQUEST
+        mock.assert_not_awaited()
+
+    @patch.object(ProducerService, "get")
+    async def test_get_producer_with_invalid_id_type_return_404_status(
+        self, mock: AsyncMock, test_client: AsyncTestClient
+    ):
+        resp = await test_client.get(f"{self.list_create_url}/-INVALID")
+        assert resp.status_code == status_codes.HTTP_404_NOT_FOUND
+        mock.assert_not_awaited()

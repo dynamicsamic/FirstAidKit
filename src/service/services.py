@@ -1,14 +1,40 @@
-from typing import Any, Iterable, Type
+from typing import Any, Iterable, Type, override
+
+from sqlalchemy.exc import CompileError, DBAPIError, IntegrityError
 
 from src.data.repository import ProducerRepository, Repository
-from src.domain.models import MedicationProducer
+from src.domain.models import BaseModel, CreateProducer, Producer
+
+from .exceptions import DuplicateError, ExtraArgumentError, InvalidArgumentTypeError
 
 
 class Service:
     repo_type: Type[Repository]
+    model_type: BaseModel
 
     def __init__(self, db_session):
         self.repo = self.repo_type(db_session)
+
+    async def list(
+        self, limit: int, offset: int, **filters: dict[str, Any]
+    ) -> list[BaseModel]:
+        filters = self.parse_filters(filters)
+        items = await self.repo.fetch_many(
+            *filters, order_by=[self.repo.model.pk], limit=limit, offset=offset
+        )
+        return [self.model_type.model_validate(item) for item in items]
+
+    async def create(self, data: BaseModel) -> BaseModel:
+        try:
+            obj = await self.repo.insert_one(**data.model_dump(exclude_none=True))
+        except IntegrityError as err:
+            raise DuplicateError from err
+        except DBAPIError as err:
+            raise InvalidArgumentTypeError from err
+        except CompileError as err:
+            raise ExtraArgumentError from err
+
+        return self.model_type.model_validate(obj)
 
     def parse_filters(self, filters: dict[str, Any]) -> dict[str, Any]:
         validated = []
@@ -39,12 +65,14 @@ class Service:
 
 class ProducerService(Service):
     repo_type = ProducerRepository
+    model_type: Producer
 
-    async def get_producers(
+    @override
+    async def list(
         self, limit: int, offset: int, **filters: dict[str, Any]
-    ) -> list[MedicationProducer]:
-        filters = self.parse_filters(filters)
-        producers = await self.repo.fetch_many(
-            *filters, order_by=[self.repo.model.pk], limit=limit, offset=offset
-        )
-        return [MedicationProducer.model_validate(item) for item in producers]
+    ) -> list[Producer]:
+        return await super().list(limit=limit, offset=offset, **filters)
+
+    @override
+    async def create(self, data: CreateProducer) -> Producer:
+        return await super().create(data=data)

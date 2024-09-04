@@ -3,7 +3,7 @@ from typing import Any, Iterable, Type, override
 from sqlalchemy.exc import CompileError, DBAPIError, IntegrityError
 
 from src.data.repository import ProducerRepository, Repository
-from src.domain.models import BaseModel, CreateProducer, Producer
+from src.domain.models import BaseModel, CreateProducer, PatchProducer, Producer
 
 from .exceptions import DuplicateError, ExtraArgumentError, InvalidArgumentTypeError
 
@@ -37,7 +37,24 @@ class Service:
         return self.model_type.model_validate(obj)
 
     async def get(self, pk: Any) -> BaseModel | None:
-        return await self.repo.fetch_one_by_pk(pk=pk)
+        instance = await self.repo.fetch_one_by_pk(pk=pk)
+        return (
+            self.model_type.model_validate(instance) if instance is not None else None
+        )
+
+    async def update(self, pk: Any, data: BaseModel) -> BaseModel | None:
+        try:
+            updated = await self.repo.update_one_by_pk(
+                pk, **data.model_dump(exclude_none=True)
+            )
+        except IntegrityError as err:
+            raise DuplicateError from err
+        except DBAPIError as err:
+            raise InvalidArgumentTypeError from err
+        except CompileError as err:
+            raise ExtraArgumentError from err
+
+        return self.model_type.model_validate(updated) if updated is not None else None
 
     def parse_filters(self, filters: dict[str, Any]) -> dict[str, Any]:
         validated = []
@@ -83,3 +100,7 @@ class ProducerService(Service):
     @override
     async def get(self, producer_id: int) -> Producer | None:
         return await super().get(pk=producer_id)
+
+    @override
+    async def update(self, producer_id: int, data: PatchProducer) -> Producer | None:
+        return await super().update(pk=producer_id, data=data)

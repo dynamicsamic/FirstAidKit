@@ -1,3 +1,6 @@
+from typing import Any, Callable
+
+from pydantic.alias_generators import to_snake
 from sqlalchemy import insert
 
 from src.data.models import Category, Medication, Producer
@@ -18,8 +21,25 @@ med_vals = [
     for i in range(1, TEST_SAMPLE)
 ]
 
+
 async def populate_db(con):
     await con.execute(insert(Producer).values(prod_vals))
     await con.execute(insert(Category).values(cat_vals))
     await con.execute(insert(Medication).values(med_vals))
     await con.commit()
+
+
+def convert_dict(converter: Callable[[str], str], replace_fields: dict[str, str]):
+    "Convert a dictionary with provided converter and replace given fields."
+
+    def convert(
+        obj: dict[str, Any],
+    ) -> dict:
+        replaced = {new: obj.pop(old) for old, new in replace_fields.items()}
+        converted = {converter(attr): val for attr, val in obj.items()}
+        return converted | replaced
+
+    return convert
+
+
+convert_to_producer = convert_dict(to_snake, {"producerId": "pk"})

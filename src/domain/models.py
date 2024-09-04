@@ -1,10 +1,19 @@
 from datetime import date, datetime
-from typing import Annotated
+from typing import Annotated, Any
 
 from pydantic import BaseModel as _BaseModel
-from pydantic import ConfigDict, Field
+from pydantic import ConfigDict, Field, model_validator
 
 from .types import DosageForm, MeasureUnit, PositiveFloat, PositiveInt
+
+
+class NonEmptyUpdateMixin:
+    @model_validator(mode="before")
+    @classmethod
+    def check_at_least_one_non_empty_field(cls, data: dict[str, Any]) -> Any:
+        if all(val is None for val in data.values()):
+            raise ValueError("At least one field must contain a not None value")
+        return data
 
 
 class BaseModel(_BaseModel):
@@ -17,13 +26,22 @@ class MedicationCategory(BaseModel):
     created_at: datetime
     updated_at: datetime
 
+
 class CreateProducer(BaseModel):
     name: Annotated[str, Field(max_length=250)]
+
 
 class Producer(CreateProducer):
     pk: PositiveInt
     created_at: datetime
     updated_at: datetime
+
+
+class PatchProducer(BaseModel, NonEmptyUpdateMixin):
+    name: Annotated[str, Field(max_length=250)] | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
 
 class Medication(BaseModel):
     meds_id: PositiveInt
@@ -42,7 +60,7 @@ class MedicationStock(BaseModel):
     measure_unit: MeasureUnit
     production_date: date
     best_before: date
-    start_consuming_at: datetime| None = None
+    start_consuming_at: datetime | None = None
 
 
 class CreateMedication(BaseModel):

@@ -36,6 +36,9 @@ class Service:
 
         return self.model_type.model_validate(obj)
 
+    async def get(self, pk: Any) -> BaseModel | None:
+        return await self.repo.fetch_one_by_pk(pk=pk)
+
     def parse_filters(self, filters: dict[str, Any]) -> dict[str, Any]:
         validated = []
 
@@ -76,3 +79,7 @@ class ProducerService(Service):
     @override
     async def create(self, data: CreateProducer) -> Producer:
         return await super().create(data=data)
+
+    @override
+    async def get(self, producer_id: int) -> Producer | None:
+        return await super().get(pk=producer_id)

@@ -8,7 +8,7 @@ from litestar.params import Dependency, Parameter
 
 from service.services import ProducerService
 from src.data.providers import provide_db_session
-from src.domain.models import CreateProducer, Producer
+from src.domain.models import CreateProducer, PatchProducer, Producer
 from src.service.exceptions import (
     DuplicateError,
     ExtraArgumentError,
@@ -16,7 +16,7 @@ from src.service.exceptions import (
 )
 from src.service.providers import provide_producer_service
 
-from ..dto import CreateProducerDTO, ProducerDTO
+from ..dto import CreateProducerDTO, PatchProducerDTO, ProducerDTO
 from ..query_params import (
     CreatedAfterParam,
     CreatedBeforeParam,
@@ -108,9 +108,55 @@ async def get_producer(
     return producer
 
 
-@patch("/{prod_id: int}")
-async def update_producer() -> None:
-    pass
+@patch("/{producer_id: int}", dto=PatchProducerDTO, return_dto=ProducerDTO, raises=[status_codes.HTTP_404_NOT_FOUND])
+async def update_producer(
+    request: Request,
+    service: Annotated[ProducerService, Dependency(skip_validation=True)],
+    producer_id: Annotated[int, Parameter(int, gt=0, required=True)],
+    data: PatchProducer
+) -> Producer:
+    try:
+        producer = await service.update(producer_id, data)
+    except DuplicateError as err:
+        request.logger.info(
+            f"Attempt to update producer with data already occupied. "
+            f"?PK={producer_id}, ?DATA={data}, ?ERROR={err}"
+        )
+        raise HTTPException(
+            status_code=status_codes.HTTP_409_CONFLICT,
+            detail="Producer with provided data already exists",
+        )
+    except InvalidArgumentTypeError as err:
+        request.logger.info(
+            f"Invalid argument type detected, causing db query fail with error: {err}."
+            f"?PK={producer_id}, ?DATA={data}."
+        )
+        raise HTTPException(
+            status_code=status_codes.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                "At least one of the provided arguments has incompatible "
+                "type with database representation"
+            ),
+        )
+    except ExtraArgumentError as err:
+        request.logger.info(
+            f"Extra argument detected, causing db query fail with error: {err}"
+            f"?PK={producer_id}, ?DATA={data}."
+        )
+        raise HTTPException(
+            status_code=status_codes.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                "At least one of the provided arguments does not belong to "
+                "the database representation"
+            ),
+        )
+
+    if not producer:
+        raise NotFoundException(
+            detail=f"Producer with id {producer_id} not found",
+        )
+
+    return producer
 
 
 @delete("/{prod_id: int}")

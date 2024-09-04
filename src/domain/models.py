@@ -1,7 +1,8 @@
 from datetime import date, datetime
+from typing import Annotated
 
 from pydantic import BaseModel as _BaseModel
-from pydantic import ConfigDict
+from pydantic import ConfigDict, Field
 
 from .types import DosageForm, MeasureUnit, PositiveFloat, PositiveInt
 
@@ -16,9 +17,11 @@ class MedicationCategory(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-class MedicationProducer(BaseModel):
-    producer_id: PositiveInt
-    name: str
+class CreateProducer(BaseModel):
+    name: Annotated[str, Field(max_length=250)]
+
+class Producer(CreateProducer):
+    pk: PositiveInt
     created_at: datetime
     updated_at: datetime
 
@@ -27,7 +30,7 @@ class Medication(BaseModel):
     brand_name: str
     generic_name: str
     dosage_form: DosageForm
-    producer: str = MedicationProducer
+    producer: str = Producer
     category: MedicationCategory
     created_at: datetime
     updated_at: datetime
@@ -46,7 +49,7 @@ class CreateMedication(BaseModel):
     brand_name: str
     generic_name: str
     dosage_form: DosageForm
-    producer: str = MedicationProducer
+    producer: str = Producer
     category: MedicationCategory
 
 

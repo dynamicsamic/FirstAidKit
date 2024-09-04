@@ -5,7 +5,7 @@ import pytest_asyncio
 from litestar import status_codes
 from litestar.testing import AsyncTestClient
 
-from src.domain.models import CreateProducer, Producer
+from src.domain.models import CreateProducer, PatchProducer, Producer
 from src.restapi.app import app
 from src.service.exceptions import DuplicateError
 from src.service.services import ProducerService
@@ -217,3 +217,83 @@ class TestProducerHandlers:
         resp = await test_client.get(f"{self.list_create_url}/-INVALID")
         assert resp.status_code == status_codes.HTTP_404_NOT_FOUND
         mock.assert_not_awaited()
+
+    @patch.object(ProducerService, "update", return_value=producer)
+    async def test_update_producer_with_valid_partial_data_return_producer_instance(
+        self, mock: AsyncMock, test_client: AsyncTestClient
+    ):
+        producer_id = 1
+        payload = {"name": "hello"}
+        resp = await test_client.patch(
+            f"{self.list_create_url}/{producer_id}", json=payload
+        )
+
+        assert resp.status_code == status_codes.HTTP_200_OK
+        mock.assert_awaited_once_with(producer_id, PatchProducer(**payload))
+        assert Producer.model_validate(convert_to_producer(resp.json()))
+
+    @patch.object(ProducerService, "update", return_value=producer)
+    async def test_update_producer_with_valid_complete_data_return_producer_instance(
+        self, mock: AsyncMock, test_client: AsyncTestClient
+    ):
+        producer_id = 1
+        date = f"{now:%Y-%m-%d %H:%M:%S}"
+        payload = {"name": "hello", "created_at": date, "updated_at": date}
+        resp = await test_client.patch(
+            f"{self.list_create_url}/{producer_id}", json=payload
+        )
+
+        assert resp.status_code == status_codes.HTTP_200_OK
+        mock.assert_awaited_once_with(producer_id, PatchProducer(**payload))
+        assert Producer.model_validate(convert_to_producer(resp.json()))
+
+    @patch.object(ProducerService, "update", return_value=None)
+    async def test_update_producer_with_id_does_not_exist_return_404_status(
+        self, mock: AsyncMock, test_client: AsyncTestClient
+    ):
+        producer_id = 1
+        payload = {"name": "hello"}
+        resp = await test_client.patch(
+            f"{self.list_create_url}/{producer_id}", json=payload
+        )
+
+        assert resp.status_code == status_codes.HTTP_404_NOT_FOUND
+        mock.assert_awaited_once_with(producer_id, PatchProducer(**payload))
+        body = resp.json()
+        assert "detail" in body and "status_code" in body
+
+    @patch.object(ProducerService, "update")
+    async def test_update_producer_with_extra_payload_return_400_status(
+        self, mock: AsyncMock, test_client: AsyncTestClient
+    ):
+        resp = await test_client.patch(
+            f"{self.list_create_url}/1", json={"extra": "extra"}
+        )
+        assert resp.status_code == status_codes.HTTP_400_BAD_REQUEST
+        mock.assert_not_awaited()
+        body = resp.json()
+        assert "detail" in body and "status_code" in body
+
+    @patch.object(ProducerService, "update", side_effect=DuplicateError)
+    async def test_update_producer_with_duplicate_payload_return_409_status(
+        self, mock: AsyncMock, test_client: AsyncTestClient
+    ):
+        resp = await test_client.patch(
+            f"{self.list_create_url}/1", json={"name": "hello"}
+        )
+        assert resp.status_code == status_codes.HTTP_409_CONFLICT
+        mock.assert_awaited_once()
+        body = resp.json()
+        assert "detail" in body and "status_code" in body
+
+    @patch.object(ProducerService, "update")
+    async def test_update_producer_with_empty_payload_return_400_status(
+        self, mock: AsyncMock, test_client: AsyncTestClient
+    ):
+        resp = await test_client.patch(
+            f"{self.list_create_url}/1", json={}
+        )
+        assert resp.status_code == status_codes.HTTP_400_BAD_REQUEST
+        mock.assert_not_awaited()
+        body = resp.json()
+        assert "detail" in body and "status_code" in body

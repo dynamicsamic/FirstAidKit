@@ -8,6 +8,7 @@ from src.settings import settings
 
 
 def datetime_param(query: str, **kwargs: Any) -> Parameter:
+    """Generate datetime-type query parameter."""
     return Parameter(
         datetime,
         query=query,

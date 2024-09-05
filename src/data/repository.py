@@ -9,7 +9,7 @@ from sqlalchemy.sql.base import Executable
 
 from src.settings import settings
 
-from .models import BaseModel, Producer
+from .models import BaseModel, Category, Producer
 
 
 class Repository:
@@ -68,7 +68,7 @@ class Repository:
         pk: Any,
         **update_data: Any,
     ) -> BaseModel | None:
-        return (await self.update(self.model.pk==pk, **update_data)).first()
+        return (await self.update(self.model.pk == pk, **update_data)).first()
 
     async def delete(self, *filters: _ColumnExpressionArgument[bool]) -> int:
         res = await self.execute(delete(self.model).where(*filters))
@@ -116,3 +116,7 @@ class Repository:
 
 class ProducerRepository(Repository):
     model = Producer
+
+
+class CategoryRepository(Repository):
+    model = Category

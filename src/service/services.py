@@ -56,6 +56,9 @@ class Service:
 
         return self.model_type.model_validate(updated) if updated is not None else None
 
+    async def delete(self, pk: Any) -> bool:
+        return await self.repo.delete(self.repo.model.pk == pk)
+
     def parse_filters(self, filters: dict[str, Any]) -> dict[str, Any]:
         validated = []
 
@@ -104,3 +107,7 @@ class ProducerService(Service):
     @override
     async def update(self, producer_id: int, data: PatchProducer) -> Producer | None:
         return await super().update(pk=producer_id, data=data)
+
+    @override
+    async def delete(self, producer_id: int) -> bool:
+        return await super().delete(pk=producer_id)

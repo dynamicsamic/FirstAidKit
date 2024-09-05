@@ -5,6 +5,7 @@ import pytest_asyncio
 from litestar import status_codes
 from litestar.testing import AsyncTestClient
 
+from src.domain.constraints import CATEGORY_NAME_LENGTH
 from src.domain.models import Category, CreateCategory, PatchCategory
 from src.restapi.app import app
 from src.service.exceptions import DuplicateError
@@ -107,7 +108,7 @@ class TestCategoryHandlers:
         assert "extra" not in mock.await_args.kwargs
 
     @patch.object(CategoryService, "list")
-    async def test_list_categories_with_invalid_query_arg_type_returns_error(
+    async def test_list_categories_with_invalid_query_arg_type_return_400_status(
         self, mock: AsyncMock, test_client: AsyncTestClient
     ):
         resp = await test_client.get(f"{self.list_create_url}?createdBefore=hello")
@@ -118,7 +119,7 @@ class TestCategoryHandlers:
         assert set(body.keys()) == {"status_code", "detail", "extra"}
 
     @patch.object(CategoryService, "list")
-    async def test_list_categories_with_negative_limit_return_error(
+    async def test_list_categories_with_negative_limit_return_400_status(
         self, mock: AsyncMock, test_client: AsyncTestClient
     ):
         resp = await test_client.get(f"{self.list_create_url}?limit=-14")
@@ -129,7 +130,7 @@ class TestCategoryHandlers:
         assert set(body.keys()) == {"status_code", "detail", "extra"}
 
     @patch.object(CategoryService, "list")
-    async def test_list_categories_with_limit_too_high_return_error(
+    async def test_list_categories_with_limit_too_high_return_400_status(
         self, mock: AsyncMock, test_client: AsyncTestClient
     ):
         resp = await test_client.get(f"{self.list_create_url}?limit=200")
@@ -151,7 +152,7 @@ class TestCategoryHandlers:
         assert Category.model_validate(convert_to_category(resp.json()))
 
     @patch.object(CategoryService, "create")
-    async def test_add_category_with_invalid_payload_return_error(
+    async def test_add_category_with_invalid_payload_return_400_status(
         self, mock: AsyncMock, test_client: AsyncTestClient
     ):
         resp = await test_client.post(self.list_create_url, json={"name": 123})
@@ -159,7 +160,16 @@ class TestCategoryHandlers:
         mock.assert_not_awaited()
 
     @patch.object(CategoryService, "create")
-    async def test_add_category_with_empty_payload_return_error(
+    async def test_add_category_with_name_too_long_return_400_status(
+        self, mock: AsyncMock, test_client: AsyncTestClient
+    ):
+        long_name = "a" * (CATEGORY_NAME_LENGTH + 1)
+        resp = await test_client.post(self.list_create_url, json={"name": long_name})
+        assert resp.status_code == status_codes.HTTP_400_BAD_REQUEST
+        mock.assert_not_awaited()
+
+    @patch.object(CategoryService, "create")
+    async def test_add_category_with_empty_payload_return_400_status(
         self, mock: AsyncMock, test_client: AsyncTestClient
     ):
         resp = await test_client.post(self.list_create_url, json={})
@@ -167,7 +177,7 @@ class TestCategoryHandlers:
         mock.assert_not_awaited()
 
     @patch.object(CategoryService, "create")
-    async def test_add_category_with_extra_payload_return_error(
+    async def test_add_category_with_extra_payload_return_400_status(
         self, mock: AsyncMock, test_client: AsyncTestClient
     ):
         resp = await test_client.post(self.list_create_url, json={"extra": "extra"})
@@ -175,7 +185,7 @@ class TestCategoryHandlers:
         mock.assert_not_awaited()
 
     @patch.object(CategoryService, "create", side_effect=DuplicateError)
-    async def test_add_category_with_duplicate_payload_return_error(
+    async def test_add_category_with_duplicate_payload_return_400_status(
         self, mock: AsyncMock, test_client: AsyncTestClient
     ):
         resp = await test_client.post(self.list_create_url, json={"name": "new_name"})
@@ -258,6 +268,19 @@ class TestCategoryHandlers:
 
         assert resp.status_code == status_codes.HTTP_404_NOT_FOUND
         mock.assert_awaited_once_with(category_id, PatchCategory(**payload))
+        body = resp.json()
+        assert "detail" in body and "status_code" in body
+
+    @patch.object(CategoryService, "update")
+    async def test_update_producer_with_name_too_long_return_400_status(
+        self, mock: AsyncMock, test_client: AsyncTestClient
+    ):
+        long_name = "a" * (CATEGORY_NAME_LENGTH + 1)
+        resp = await test_client.patch(
+            f"{self.list_create_url}/1", json={"name": long_name}
+        )
+        assert resp.status_code == status_codes.HTTP_400_BAD_REQUEST
+        mock.assert_not_awaited()
         body = resp.json()
         assert "detail" in body and "status_code" in body
 

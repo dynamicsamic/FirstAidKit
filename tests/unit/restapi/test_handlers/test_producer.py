@@ -5,6 +5,7 @@ import pytest_asyncio
 from litestar import status_codes
 from litestar.testing import AsyncTestClient
 
+from src.domain.constraints import PRODUCER_NAME_LENGTH
 from src.domain.models import CreateProducer, PatchProducer, Producer
 from src.restapi.app import app
 from src.service.exceptions import DuplicateError
@@ -107,7 +108,7 @@ class TestProducerHandlers:
         assert "extra" not in mock.await_args.kwargs
 
     @patch.object(ProducerService, "list")
-    async def test_list_producers_with_invalid_query_arg_type_returns_error(
+    async def test_list_producers_with_invalid_query_arg_type_returns_400_status(
         self, mock: AsyncMock, test_client: AsyncTestClient
     ):
         resp = await test_client.get(f"{self.list_create_url}?createdBefore=hello")
@@ -118,7 +119,7 @@ class TestProducerHandlers:
         assert set(body.keys()) == {"status_code", "detail", "extra"}
 
     @patch.object(ProducerService, "list")
-    async def test_list_producers_with_negative_limit_return_error(
+    async def test_list_producers_with_negative_limit_return_400_status(
         self, mock: AsyncMock, test_client: AsyncTestClient
     ):
         resp = await test_client.get(f"{self.list_create_url}?limit=-14")
@@ -129,7 +130,7 @@ class TestProducerHandlers:
         assert set(body.keys()) == {"status_code", "detail", "extra"}
 
     @patch.object(ProducerService, "list")
-    async def test_list_producers_with_limit_too_high_return_error(
+    async def test_list_producers_with_limit_too_high_return_400_status(
         self, mock: AsyncMock, test_client: AsyncTestClient
     ):
         resp = await test_client.get(f"{self.list_create_url}?limit=200")
@@ -152,7 +153,7 @@ class TestProducerHandlers:
         assert Producer.model_validate(normalized_producer)
 
     @patch.object(ProducerService, "create")
-    async def test_add_producer_with_invalid_payload_return_error(
+    async def test_add_producer_with_invalid_payload_return_400_status(
         self, mock: AsyncMock, test_client: AsyncTestClient
     ):
         resp = await test_client.post(self.list_create_url, json={"name": 123})
@@ -160,7 +161,16 @@ class TestProducerHandlers:
         mock.assert_not_awaited()
 
     @patch.object(ProducerService, "create")
-    async def test_add_producer_with_empty_payload_return_error(
+    async def test_add_producer_with_name_too_long_return_400_status(
+        self, mock: AsyncMock, test_client: AsyncTestClient
+    ):
+        long_name = "a" * (PRODUCER_NAME_LENGTH + 1)
+        resp = await test_client.post(self.list_create_url, json={"name": long_name})
+        assert resp.status_code == status_codes.HTTP_400_BAD_REQUEST
+        mock.assert_not_awaited()
+
+    @patch.object(ProducerService, "create")
+    async def test_add_producer_with_empty_payload_return_400_status(
         self, mock: AsyncMock, test_client: AsyncTestClient
     ):
         resp = await test_client.post(self.list_create_url, json={})
@@ -168,7 +178,7 @@ class TestProducerHandlers:
         mock.assert_not_awaited()
 
     @patch.object(ProducerService, "create")
-    async def test_add_producer_with_extra_payload_return_error(
+    async def test_add_producer_with_extra_payload_return_400_status(
         self, mock: AsyncMock, test_client: AsyncTestClient
     ):
         resp = await test_client.post(self.list_create_url, json={"extra": "extra"})
@@ -176,7 +186,7 @@ class TestProducerHandlers:
         mock.assert_not_awaited()
 
     @patch.object(ProducerService, "create", side_effect=DuplicateError)
-    async def test_add_producer_with_duplicate_payload_return_error(
+    async def test_add_producer_with_duplicate_payload_return_400_status(
         self, mock: AsyncMock, test_client: AsyncTestClient
     ):
         resp = await test_client.post(self.list_create_url, json={"name": "new_name"})
@@ -268,6 +278,19 @@ class TestProducerHandlers:
     ):
         resp = await test_client.patch(
             f"{self.list_create_url}/1", json={"extra": "extra"}
+        )
+        assert resp.status_code == status_codes.HTTP_400_BAD_REQUEST
+        mock.assert_not_awaited()
+        body = resp.json()
+        assert "detail" in body and "status_code" in body
+
+    @patch.object(ProducerService, "update")
+    async def test_update_producer_with_name_too_long_return_400_status(
+        self, mock: AsyncMock, test_client: AsyncTestClient
+    ):
+        long_name = "a" * (PRODUCER_NAME_LENGTH + 1)
+        resp = await test_client.patch(
+            f"{self.list_create_url}/1", json={"name": long_name}
         )
         assert resp.status_code == status_codes.HTTP_400_BAD_REQUEST
         mock.assert_not_awaited()

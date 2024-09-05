@@ -4,7 +4,13 @@ from typing import Generator
 from sqlalchemy import DateTime, Enum, ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
-from domain.types import DosageForm
+from src.domain.constraints import (
+    CATEGORY_NAME_LENGTH,
+    MEDICATION_BRAND_NAME_LENGTH,
+    MEDICATION_GENERIC_NAME_LENGTH,
+    PRODUCER_NAME_LENGTH,
+)
+from src.domain.types import DosageForm
 from src.utils import now
 
 
@@ -25,8 +31,7 @@ class BaseModel(Base):
 class Producer(BaseModel):
     __tablename__ = "producers"
 
-    # producer_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    name: Mapped[str] = mapped_column(String(250), unique=True)
+    name: Mapped[str] = mapped_column(String(PRODUCER_NAME_LENGTH), unique=True)
     # meds: Mapped[list["Medication"]] = relationship(back_populates="producer", lazy="noload")
     meds: Mapped[Generator["Medication", None, None]] = relationship(
         back_populates="producer", lazy="noload"
@@ -36,8 +41,7 @@ class Producer(BaseModel):
 class Category(BaseModel):
     __tablename__ = "categories"
 
-    # category_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    name: Mapped[str] = mapped_column(String(60), unique=True)
+    name: Mapped[str] = mapped_column(String(CATEGORY_NAME_LENGTH), unique=True)
     meds: Mapped[Generator["Medication", None, None]] = relationship(
         back_populates="category", lazy="noload"
     )
@@ -46,9 +50,8 @@ class Category(BaseModel):
 class Medication(BaseModel):
     __tablename__ = "medications"
 
-    # medication_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    brand_name: Mapped[str] = mapped_column(String(250))
-    generic_name: Mapped[str] = mapped_column(String(120))
+    brand_name: Mapped[str] = mapped_column(String(MEDICATION_BRAND_NAME_LENGTH))
+    generic_name: Mapped[str] = mapped_column(String(MEDICATION_GENERIC_NAME_LENGTH))
     dosage_form: Mapped[Enum] = mapped_column(
         Enum(DosageForm, create_constraint=True, validate_string=True)
     )

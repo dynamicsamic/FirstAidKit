@@ -4,6 +4,7 @@ from typing import Annotated, Any
 from pydantic import BaseModel as _BaseModel
 from pydantic import ConfigDict, Field, model_validator
 
+from .constraints import CATEGORY_NAME_LENGTH, PRODUCER_NAME_LENGTH
 from .types import DosageForm, MeasureUnit, PositiveFloat, PositiveInt
 
 
@@ -16,38 +17,40 @@ class NonEmptyUpdateMixin:
         return data
 
 
+class PkDatetimeAttrsMixin:
+    pk: PositiveInt
+    created_at: datetime
+    updated_at: datetime
+
+
 class BaseModel(_BaseModel):
     model_config = ConfigDict(from_attributes=True, extra="forbid")
 
 
 class CreateCategory(BaseModel):
-    name: Annotated[str, Field(max_length=60)]
+    name: Annotated[str, Field(max_length=CATEGORY_NAME_LENGTH)]
 
 
-class Category(CreateCategory):
-    pk: PositiveInt
-    created_at: datetime
-    updated_at: datetime
+class Category(CreateCategory, PkDatetimeAttrsMixin):
+    pass
 
 
 class PatchCategory(BaseModel, NonEmptyUpdateMixin):
-    name: Annotated[str, Field(max_length=60)] | None = None
+    name: Annotated[str, Field(max_length=CATEGORY_NAME_LENGTH)] | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
 
 
 class CreateProducer(BaseModel):
-    name: Annotated[str, Field(max_length=250)]
+    name: Annotated[str, Field(max_length=PRODUCER_NAME_LENGTH)]
 
 
-class Producer(CreateProducer):
-    pk: PositiveInt
-    created_at: datetime
-    updated_at: datetime
+class Producer(CreateProducer, PkDatetimeAttrsMixin):
+    pass
 
 
 class PatchProducer(BaseModel, NonEmptyUpdateMixin):
-    name: Annotated[str, Field(max_length=250)] | None = None
+    name: Annotated[str, Field(max_length=PRODUCER_NAME_LENGTH)] | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
 
@@ -78,18 +81,3 @@ class CreateMedication(BaseModel):
     dosage_form: DosageForm
     producer: str = Producer
     category: Category
-
-
-"""
-view all medications
-add new medication
-view one medication
-update one medication
-delete one medication
-
-patch meds/1/update
-post meds/1/refill
-post meds/1/consume
-
-
-"""

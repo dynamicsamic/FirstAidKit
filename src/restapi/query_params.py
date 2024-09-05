@@ -13,7 +13,7 @@ def datetime_param(query: str, **kwargs: Any) -> Parameter:
         datetime,
         query=query,
         required=False,
-        examples=[Example(value="2015-01-16T16:52:00")],
+        examples=[Example(summary="example-1", value="2015-01-16T16:52:00")],
         **kwargs,
     )
 
@@ -33,10 +33,10 @@ IdsParam = Parameter(
     query="ids",
     required=False,
     default=None,
-    examples=[Example(value="FirstName&names=AnotherName")],
+    examples=[Example(summary="example-1", value="names=FirstName&names=AnotherName")],
 )
 NamesParam = Parameter(
     required=False,
     default=None,
-    examples=[Example(value="FirstName&names=AnotherName")],
+    examples=[Example(summary="example-1", value="FirstName&names=AnotherName")],
 )

@@ -6,7 +6,6 @@ from litestar.di import Provide
 from litestar.exceptions import HTTPException, NotFoundException
 from litestar.params import Dependency, Parameter
 
-from service.services import ProducerService
 from src.data.providers import provide_db_session
 from src.domain.models import CreateProducer, PatchProducer, Producer
 from src.service.exceptions import (
@@ -15,6 +14,7 @@ from src.service.exceptions import (
     InvalidArgumentTypeError,
 )
 from src.service.providers import provide_producer_service
+from src.service.services import ProducerService
 
 from ..dto import CreateProducerDTO, PatchProducerDTO, ProducerDTO
 from ..query_params import (

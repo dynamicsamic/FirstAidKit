@@ -43,3 +43,4 @@ def convert_dict(converter: Callable[[str], str], replace_fields: dict[str, str]
 
 
 convert_to_producer = convert_dict(to_snake, {"producerId": "pk"})
+convert_to_category = convert_dict(to_snake, {"categoryId": "pk"})

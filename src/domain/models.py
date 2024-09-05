@@ -20,11 +20,20 @@ class BaseModel(_BaseModel):
     model_config = ConfigDict(from_attributes=True, extra="forbid")
 
 
-class MedicationCategory(BaseModel):
-    category_id: PositiveInt
-    name: str
+class CreateCategory(BaseModel):
+    name: Annotated[str, Field(max_length=60)]
+
+
+class Category(CreateCategory):
+    pk: PositiveInt
     created_at: datetime
     updated_at: datetime
+
+
+class PatchCategory(BaseModel, NonEmptyUpdateMixin):
+    name: Annotated[str, Field(max_length=60)] | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
 
 class CreateProducer(BaseModel):
@@ -49,7 +58,7 @@ class Medication(BaseModel):
     generic_name: str
     dosage_form: DosageForm
     producer: str = Producer
-    category: MedicationCategory
+    category: Category
     created_at: datetime
     updated_at: datetime
 
@@ -68,7 +77,7 @@ class CreateMedication(BaseModel):
     generic_name: str
     dosage_form: DosageForm
     producer: str = Producer
-    category: MedicationCategory
+    category: Category
 
 
 """

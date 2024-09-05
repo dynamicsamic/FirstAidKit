@@ -2,8 +2,16 @@ from typing import Any, Iterable, Type, override
 
 from sqlalchemy.exc import CompileError, DBAPIError, IntegrityError
 
-from src.data.repository import ProducerRepository, Repository
-from src.domain.models import BaseModel, CreateProducer, PatchProducer, Producer
+from src.data.repository import CategoryRepository, ProducerRepository, Repository
+from src.domain.models import (
+    BaseModel,
+    Category,
+    CreateCategory,
+    CreateProducer,
+    PatchCategory,
+    PatchProducer,
+    Producer,
+)
 
 from .exceptions import DuplicateError, ExtraArgumentError, InvalidArgumentTypeError
 
@@ -88,7 +96,7 @@ class Service:
 
 class ProducerService(Service):
     repo_type = ProducerRepository
-    model_type: Producer
+    model_type = Producer
 
     @override
     async def list(
@@ -111,3 +119,30 @@ class ProducerService(Service):
     @override
     async def delete(self, producer_id: int) -> bool:
         return await super().delete(pk=producer_id)
+
+
+class CategoryService(Service):
+    repo_type = CategoryRepository
+    model_type = Category
+
+    @override
+    async def list(
+        self, limit: int, offset: int, **filters: dict[str, Any]
+    ) -> list[Category]:
+        return await super().list(limit=limit, offset=offset, **filters)
+
+    @override
+    async def create(self, data: CreateCategory) -> Category:
+        return await super().create(data=data)
+
+    @override
+    async def get(self, category_id: int) -> Category | None:
+        return await super().get(pk=category_id)
+
+    @override
+    async def update(self, category_id: int, data: PatchCategory) -> Category | None:
+        return await super().update(pk=category_id, data=data)
+
+    @override
+    async def delete(self, category_id: int) -> bool:
+        return await super().delete(pk=category_id)

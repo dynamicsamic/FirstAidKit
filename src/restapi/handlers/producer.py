@@ -108,12 +108,17 @@ async def get_producer(
     return producer
 
 
-@patch("/{producer_id: int}", dto=PatchProducerDTO, return_dto=ProducerDTO, raises=[status_codes.HTTP_404_NOT_FOUND])
+@patch(
+    "/{producer_id: int}",
+    dto=PatchProducerDTO,
+    return_dto=ProducerDTO,
+    raises=[NotFoundException],
+)
 async def update_producer(
     request: Request,
     service: Annotated[ProducerService, Dependency(skip_validation=True)],
     producer_id: Annotated[int, Parameter(int, gt=0, required=True)],
-    data: PatchProducer
+    data: PatchProducer,
 ) -> Producer:
     try:
         producer = await service.update(producer_id, data)
@@ -152,16 +157,19 @@ async def update_producer(
         )
 
     if not producer:
-        raise NotFoundException(
-            detail=f"Producer with id {producer_id} not found",
-        )
+        raise NotFoundException(detail=f"Producer with id {producer_id} not found")
 
     return producer
 
 
-@delete("/{prod_id: int}")
-async def delete_producer() -> None:
-    pass
+@delete("/{producer_id: int}", raises=[NotFoundException])
+async def delete_producer(
+    service: Annotated[ProducerService, Dependency(skip_validation=True)],
+    producer_id: Annotated[int, Parameter(int, gt=0, required=True)],
+) -> None:
+    deleted = await service.delete(producer_id)
+    if not deleted:
+        raise NotFoundException(detail=f"Producer with id {producer_id} not found")
 
 
 router = Router(

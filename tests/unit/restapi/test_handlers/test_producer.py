@@ -290,10 +290,37 @@ class TestProducerHandlers:
     async def test_update_producer_with_empty_payload_return_400_status(
         self, mock: AsyncMock, test_client: AsyncTestClient
     ):
-        resp = await test_client.patch(
-            f"{self.list_create_url}/1", json={}
-        )
-        assert resp.status_code == status_codes.HTTP_400_BAD_REQUEST
+        resp = await test_client.patch(f"{self.list_create_url}/1", json={})
         mock.assert_not_awaited()
+        assert resp.status_code == status_codes.HTTP_400_BAD_REQUEST
         body = resp.json()
         assert "detail" in body and "status_code" in body
+
+    @patch.object(ProducerService, "delete", return_value=True)
+    async def test_delete_producer_with_existing_id_return_204_status(
+        self, mock: AsyncMock, test_client: AsyncTestClient
+    ):
+        producer_id = 1
+        resp = await test_client.delete(f"{self.list_create_url}/{producer_id}")
+
+        mock.assert_awaited_once_with(producer_id)
+        assert resp.status_code == status_codes.HTTP_204_NO_CONTENT
+
+    @patch.object(ProducerService, "delete", return_value=False)
+    async def test_delete_producer_with_id_does_not_exist_return_404_status(
+        self, mock: AsyncMock, test_client: AsyncTestClient
+    ):
+        producer_id = 1
+        resp = await test_client.delete(f"{self.list_create_url}/{producer_id}")
+
+        mock.assert_awaited_once_with(producer_id)
+        assert resp.status_code == status_codes.HTTP_404_NOT_FOUND
+
+    @patch.object(ProducerService, "delete")
+    async def test_delete_producer_with_negative_id_return_400_status(
+        self, mock: AsyncMock, test_client: AsyncTestClient
+    ):
+        resp = await test_client.delete(f"{self.list_create_url}/-1")
+
+        mock.assert_not_awaited()
+        assert resp.status_code == status_codes.HTTP_400_BAD_REQUEST

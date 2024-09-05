@@ -110,7 +110,7 @@ class TestGenericRepository:
 
         assert len(r.all()) == 0
 
-    @pytest.mark.xfail(raises=ProgrammingError, strict=True)
+    @pytest.mark.xfail(raises=ValueError, strict=True)
     async def test_fetch_many_with_invalid_limit_type(self):
         async with sessionmaker() as session:
             await Repo(session).fetch_many(limit="a12")

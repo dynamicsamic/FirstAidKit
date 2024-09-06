@@ -1,15 +1,16 @@
 from typing import Any, Iterable, Type
 
-from sqlalchemy import Select, delete, insert, select, text, update
+from sqlalchemy import Select, SQLColumnExpression, delete, insert, select, text, update
 from sqlalchemy.engine import CursorResult, Result, ScalarResult
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload, load_only
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.sql._typing import _ColumnExpressionArgument
-from sqlalchemy.sql.base import Executable
+from sqlalchemy.sql.base import Executable, ExecutableOption
 
 from src.settings import settings
 
-from .models import BaseModel, Category, Producer
+from .models import BaseModel, Category, Medication, Producer
 
 
 class Repository:
@@ -104,12 +105,17 @@ class Repository:
     def _select(
         self,
         *filters: _ColumnExpressionArgument[bool],
-        order_by: Iterable[InstrumentedAttribute] = None,
+        order_by: Iterable[InstrumentedAttribute] | None = None,
+        columns: Iterable[SQLColumnExpression] | None = None,
+        options: Iterable[ExecutableOption] | None = None,
     ) -> Select:
-        qry = select(self.model).where(*filters)
+        selected = columns or self.model
+        order_by = order_by or [self.model.pk]
 
-        if order_by:
-            qry = qry.order_by(*order_by)
+        qry = select(selected).where(*filters).order_by(*order_by)
+
+        if options:
+            qry = qry.options(*options)
 
         return qry
 
@@ -120,3 +126,25 @@ class ProducerRepository(Repository):
 
 class CategoryRepository(Repository):
     model = Category
+
+
+class MedicationRepository(Repository):
+    model = Medication
+
+    def _select(
+        self,
+        *filters: _ColumnExpressionArgument[bool],
+        order_by: Iterable[InstrumentedAttribute] | None = None,
+    ):
+        return super()._select(
+            *filters,
+            order_by=order_by,
+            options=(
+                joinedload(Medication.producer).options(
+                    load_only(Producer.name, Producer.pk)
+                ),
+                joinedload(Medication.category).options(
+                    load_only(Category.name, Category.pk)
+                ),
+            ),
+        )

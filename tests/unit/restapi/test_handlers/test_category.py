@@ -12,7 +12,8 @@ from src.service.exceptions import DuplicateError
 from src.service.services import CategoryService
 from src.utils import now as now_
 from tests.conftest import DEFAULT_LIMIT
-from tests.utils import convert_to_category
+
+from .mock_response import CategoryJSONResponse
 
 pytestmark = pytest.mark.asyncio
 
@@ -50,7 +51,7 @@ class TestCategoryHandlers:
         )
         body = resp.json()
         assert isinstance(body, list)
-        assert all(Category.model_validate(convert_to_category(item)) for item in body)
+        assert all(Category.model_validate(CategoryJSONResponse(**item)) for item in body)
 
     @patch.object(CategoryService, "list", return_value=categories)
     async def test_list_categories_with_query_args_uses_provided_args(
@@ -85,7 +86,7 @@ class TestCategoryHandlers:
         )
         body = resp.json()
         assert isinstance(body, list)
-        assert all(Category.model_validate(convert_to_category(item)) for item in body)
+        assert all(Category.model_validate(CategoryJSONResponse(**item)) for item in body)
 
     @patch.object(CategoryService, "list", return_value=[])
     async def test_list_categories_with_empty_service_response(
@@ -149,7 +150,7 @@ class TestCategoryHandlers:
 
         assert resp.status_code == status_codes.HTTP_201_CREATED
         mock.assert_awaited_once_with(CreateCategory(**data))
-        assert Category.model_validate(convert_to_category(resp.json()))
+        assert Category.model_validate(CategoryJSONResponse(**resp.json()))
 
     @patch.object(CategoryService, "create")
     async def test_add_category_with_invalid_payload_return_400_status(
@@ -201,7 +202,7 @@ class TestCategoryHandlers:
 
         assert resp.status_code == status_codes.HTTP_200_OK
         mock.assert_awaited_once_with(category_id)
-        assert Category.model_validate(convert_to_category(resp.json()))
+        assert Category.model_validate(CategoryJSONResponse(**resp.json()))
 
     @patch.object(CategoryService, "get", return_value=None)
     async def test_get_category_with_id_does_not_exist_return_404_status(
@@ -239,7 +240,7 @@ class TestCategoryHandlers:
 
         assert resp.status_code == status_codes.HTTP_200_OK
         mock.assert_awaited_once_with(category_id, PatchCategory(**payload))
-        assert Category.model_validate(convert_to_category(resp.json()))
+        assert Category.model_validate(CategoryJSONResponse(**resp.json()))
 
     @patch.object(CategoryService, "update", return_value=category)
     async def test_update_category_with_valid_complete_data_return_category_instance(
@@ -254,7 +255,7 @@ class TestCategoryHandlers:
 
         assert resp.status_code == status_codes.HTTP_200_OK
         mock.assert_awaited_once_with(category_id, PatchCategory(**payload))
-        assert Category.model_validate(convert_to_category(resp.json()))
+        assert Category.model_validate(CategoryJSONResponse(**resp.json()))
 
     @patch.object(CategoryService, "update", return_value=None)
     async def test_update_category_with_id_does_not_exist_return_404_status(

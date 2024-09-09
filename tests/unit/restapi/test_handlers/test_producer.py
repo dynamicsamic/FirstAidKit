@@ -12,7 +12,8 @@ from src.service.exceptions import DuplicateError
 from src.service.services import ProducerService
 from src.utils import now as now_
 from tests.conftest import DEFAULT_LIMIT
-from tests.utils import convert_to_producer
+
+from .mock_response import ProducerJSONResponse
 
 pytestmark = pytest.mark.asyncio
 
@@ -50,7 +51,9 @@ class TestProducerHandlers:
         )
         body = resp.json()
         assert isinstance(body, list)
-        assert all(Producer.model_validate(convert_to_producer(item)) for item in body)
+        assert all(
+            Producer.model_validate(ProducerJSONResponse(**item)) for item in body
+        )
 
     @patch.object(ProducerService, "list", return_value=producers)
     async def test_list_producers_with_query_args_uses_provided_args(
@@ -85,7 +88,9 @@ class TestProducerHandlers:
         )
         body = resp.json()
         assert isinstance(body, list)
-        assert all(Producer.model_validate(convert_to_producer(item)) for item in body)
+        assert all(
+            Producer.model_validate(ProducerJSONResponse(**item)) for item in body
+        )
 
     @patch.object(ProducerService, "list", return_value=[])
     async def test_list_producers_with_empty_service_response(
@@ -149,7 +154,7 @@ class TestProducerHandlers:
 
         assert resp.status_code == status_codes.HTTP_201_CREATED
         mock.assert_awaited_once_with(CreateProducer(**data))
-        normalized_producer = convert_to_producer(resp.json())
+        normalized_producer = ProducerJSONResponse(**resp.json())
         assert Producer.model_validate(normalized_producer)
 
     @patch.object(ProducerService, "create")
@@ -202,7 +207,7 @@ class TestProducerHandlers:
 
         assert resp.status_code == status_codes.HTTP_200_OK
         mock.assert_awaited_once_with(producer_id)
-        assert Producer.model_validate(convert_to_producer(resp.json()))
+        assert Producer.model_validate(ProducerJSONResponse(**resp.json()))
 
     @patch.object(ProducerService, "get", return_value=None)
     async def test_get_producer_with_id_does_not_exist_return_404_status(
@@ -240,7 +245,7 @@ class TestProducerHandlers:
 
         assert resp.status_code == status_codes.HTTP_200_OK
         mock.assert_awaited_once_with(producer_id, PatchProducer(**payload))
-        assert Producer.model_validate(convert_to_producer(resp.json()))
+        assert Producer.model_validate(ProducerJSONResponse(**resp.json()))
 
     @patch.object(ProducerService, "update", return_value=producer)
     async def test_update_producer_with_valid_complete_data_return_producer_instance(
@@ -255,7 +260,7 @@ class TestProducerHandlers:
 
         assert resp.status_code == status_codes.HTTP_200_OK
         mock.assert_awaited_once_with(producer_id, PatchProducer(**payload))
-        assert Producer.model_validate(convert_to_producer(resp.json()))
+        assert Producer.model_validate(ProducerJSONResponse(**resp.json()))
 
     @patch.object(ProducerService, "update", return_value=None)
     async def test_update_producer_with_id_does_not_exist_return_404_status(

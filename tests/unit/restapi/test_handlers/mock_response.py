@@ -26,7 +26,7 @@ class MedicationCategory(BaseModel):
     pk: Annotated[int, Field(alias="categoryId")]
 
 
-class OutputMedication(Medication):
+class MedicationJSONResponse(Medication):
     model_config = ConfigDict(alias_generator=to_camel)
     pk: Annotated[int, Field(alias="medicationId")]
     producer: MedicationProducer | None = None

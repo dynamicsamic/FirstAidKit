@@ -27,7 +27,7 @@ from src.service.services import MedicationService as Service
 from src.utils import now as now_
 from tests.conftest import DEFAULT_LIMIT
 
-from .mock_response import OutputMedication
+from .mock_response import MedicationJSONResponse
 
 pytestmark = pytest.mark.asyncio
 
@@ -78,7 +78,7 @@ async def test_list_medications_without_query_args_use_default_values(
     assert resp.status_code == status_codes.HTTP_200_OK
     body = resp.json()
     assert isinstance(body, list)
-    assert all(Medication.model_validate(OutputMedication(**item)) for item in body)
+    assert all(Medication.model_validate(MedicationJSONResponse(**item)) for item in body)
 
 
 @patch.object(Service, "list", return_value=medications)
@@ -126,7 +126,7 @@ async def test_list_medications_with_query_args_uses_provided_args(
     )
     body = resp.json()
     assert isinstance(body, list)
-    assert all(Medication.model_validate(OutputMedication(**item)) for item in body)
+    assert all(Medication.model_validate(MedicationJSONResponse(**item)) for item in body)
 
 
 @patch.object(Service, "list", return_value=[])
@@ -202,7 +202,7 @@ async def test_add_medication_with_valid_complete_payload_return_created_instanc
 
     mock.assert_awaited_once_with(CreateMedication(**data))
     assert resp.status_code == status_codes.HTTP_201_CREATED
-    assert Medication.model_validate(OutputMedication(**resp.json()))
+    assert Medication.model_validate(MedicationJSONResponse(**resp.json()))
 
 
 @patch.object(Service, "create", return_value=medication)
@@ -218,7 +218,7 @@ async def test_add_medication_with_valid_partial_payload_return_created_instance
 
     mock.assert_awaited_once_with(CreateMedication(**data))
     assert resp.status_code == status_codes.HTTP_201_CREATED
-    assert Medication.model_validate(OutputMedication(**resp.json()))
+    assert Medication.model_validate(MedicationJSONResponse(**resp.json()))
 
 
 @patch.object(Service, "create")
@@ -344,7 +344,7 @@ async def test_get_medication_with_existing_id_return_medication_instance(
     resp = await test_client.get(item_url)
     mock.assert_awaited_once_with(medication_id)
     assert resp.status_code == status_codes.HTTP_200_OK
-    assert Medication.model_validate(OutputMedication(**resp.json()))
+    assert Medication.model_validate(MedicationJSONResponse(**resp.json()))
 
 
 @patch.object(Service, "get", return_value=None)
@@ -383,7 +383,7 @@ async def test_update_medication_with_valid_partial_data_return_category_instanc
 
     mock.assert_awaited_once_with(medication_id, PatchMedication(**payload))
     assert resp.status_code == status_codes.HTTP_200_OK
-    assert Medication.model_validate(OutputMedication(**resp.json()))
+    assert Medication.model_validate(MedicationJSONResponse(**resp.json()))
 
 
 @patch.object(Service, "update", return_value=medication)
@@ -404,7 +404,7 @@ async def test_update_medication_with_valid_complete_data_return_category_instan
 
     assert resp.status_code == status_codes.HTTP_200_OK
     mock.assert_awaited_once_with(medication_id, PatchMedication(**payload))
-    assert Medication.model_validate(OutputMedication(**resp.json()))
+    assert Medication.model_validate(MedicationJSONResponse(**resp.json()))
 
 
 @patch.object(Service, "update", return_value=None)

@@ -56,11 +56,11 @@ class Medication(BaseModel):
         Enum(DosageForm, create_constraint=True, validate_string=True)
     )
     producer_id: Mapped[int] = mapped_column(
-        ForeignKey(Producer.pk, ondelete="SET NULL")
+        ForeignKey(Producer.pk, ondelete="SET NULL"), nullable=True
     )  # refactor later
     producer: Mapped[Producer] = relationship(back_populates="meds", lazy="noload")
     category_id: Mapped[int] = mapped_column(
-        ForeignKey(Category.pk, ondelete="SET NULL")
+        ForeignKey(Category.pk, ondelete="SET NULL"), nullable=True
     )  # refactor later
     category: Mapped[Category] = relationship(back_populates="meds", lazy="noload")
     UniqueConstraint(brand_name, dosage_form, producer_id)

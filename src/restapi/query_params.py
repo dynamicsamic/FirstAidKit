@@ -4,6 +4,7 @@ from typing import Any
 from litestar.openapi.spec import Example
 from litestar.params import Parameter
 
+from src.domain.types import DosageForm
 from src.settings import settings
 
 
@@ -38,5 +39,40 @@ IdsParam = Parameter(
 NamesParam = Parameter(
     required=False,
     default=None,
-    examples=[Example(summary="example-1", value="FirstName&names=AnotherName")],
+    examples=[Example(summary="example-1", value="names=FirstName&names=AnotherName")],
+)
+BrandNamesParam = Parameter(
+    list[str],
+    query="brandNames",
+    required=False,
+    default=None,
+    examples=[Example(summary="example-1", value="brandNames=CoolTabs300mg")]
+)
+GenericNamesParam = Parameter(
+    list[str],
+    query="genericNames",
+    required=False,
+    default=None,
+    examples=[Example(summary="example-1", value="genericNames=NikotinAcid&genericNames=GreenMixture")]
+)
+DosageFormsParam = Parameter(
+    list[DosageForm],
+    query="dosageForms",
+    required=False,
+    default=None,
+    examples=[Example(summary="example-1", value="dosageForms=tablet&dosageForms=mixture")]
+)
+ProducerIdsParam = Parameter(
+    list[int],
+    query="producerIds",
+    required=False,
+    default=None,
+    examples=[Example(summary="example-1", value="producerIds=1&producerIds=2")],
+)
+CategoryIdsParam = Parameter(
+    list[int],
+    query="categoryIds",
+    required=False,
+    default=None,
+    examples=[Example(summary="example-1", value="categoryIds=1&categoryIds=2")],
 )

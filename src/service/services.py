@@ -2,13 +2,21 @@ from typing import Any, Iterable, Type, override
 
 from sqlalchemy.exc import CompileError, DBAPIError, IntegrityError
 
-from src.data.repository import CategoryRepository, ProducerRepository, Repository
+from src.data.repository import (
+    CategoryRepository,
+    MedicationRepository,
+    ProducerRepository,
+    Repository,
+)
 from src.domain.models import (
     BaseModel,
     Category,
     CreateCategory,
+    CreateMedication,
     CreateProducer,
+    Medication,
     PatchCategory,
+    PatchMedication,
     PatchProducer,
     Producer,
 )
@@ -146,3 +154,32 @@ class CategoryService(Service):
     @override
     async def delete(self, category_id: int) -> bool:
         return await super().delete(pk=category_id)
+
+
+class MedicationService(Service):
+    repo_type = MedicationRepository
+    model_type = Medication
+
+    @override
+    async def list(
+        self, limit: int, offset: int, **filters: dict[str, Any]
+    ) -> list[Medication]:
+        return await super().list(limit=limit, offset=offset, **filters)
+
+    @override
+    async def create(self, data: CreateMedication) -> Medication:
+        return await super().create(data=data)
+
+    @override
+    async def get(self, medication_id: int) -> Medication | None:
+        return await super().get(pk=medication_id)
+
+    @override
+    async def update(
+        self, medication_id: int, data: PatchMedication
+    ) -> Medication | None:
+        return await super().update(pk=medication_id, data=data)
+
+    @override
+    async def delete(self, medication_id: int) -> bool:
+        return await super().delete(pk=medication_id)

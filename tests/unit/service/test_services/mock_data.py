@@ -11,3 +11,10 @@ class MockProducer(BaseModel):
 
 class MockCategory(MockProducer):
     pass
+
+class MockMedication(MockProducer):
+    brand_name: Any = None
+    generic_name: Any = None
+    dosage_form: Any = None
+    producer_id: Any = None
+    category_id: Any = None

@@ -48,8 +48,10 @@ class Service:
         return [self.model_type.model_validate(item) for item in items]
 
     async def create(self, data: BaseModel) -> BaseModel:
+        if not (data := data.model_dump(exclude_none=True)):
+            raise ValueError("Empty data not allowed.")
         try:
-            obj = await self.repo.insert_one(**data.model_dump(exclude_none=True))
+            obj = await self.repo.insert_one(**data)
         except IntegrityError as err:
             raise DuplicateError from err
         except DBAPIError as err:
@@ -66,10 +68,10 @@ class Service:
         )
 
     async def update(self, pk: Any, data: BaseModel) -> BaseModel | None:
+        if not (data := data.model_dump(exclude_none=True)):
+            raise ValueError("Empty data not allowed.")
         try:
-            updated = await self.repo.update_one_by_pk(
-                pk, **data.model_dump(exclude_none=True)
-            )
+            updated = await self.repo.update_one_by_pk(pk, **data)
         except IntegrityError as err:
             raise DuplicateError from err
         except DBAPIError as err:

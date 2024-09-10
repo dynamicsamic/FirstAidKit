@@ -1,13 +1,11 @@
-from typing import Any
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from pydantic import BaseModel
 from sqlalchemy.exc import CompileError, DBAPIError, IntegrityError
 
 from src.data.models import Producer as DBProducer
 from src.data.repository import ProducerRepository as Repo
-from src.domain.models import CreateProducer, Producer
+from src.domain.models import Producer
 from src.service.exceptions import (
     DuplicateError,
     ExtraArgumentError,
@@ -16,19 +14,14 @@ from src.service.exceptions import (
 from src.service.services import ProducerService as Service
 from src.utils import now as now_
 
+from .mock_data import MockProducer
+
 pytestmark = pytest.mark.asyncio
-
-
-class MockProducer(BaseModel):
-    name: Any = None
-    extra: Any = None
-    created_at: Any = None
-    updated_at: Any = None
 
 
 now = now_()
 producer_id = 1
-producer = DBProducer(pk=1, name="test1", created_at=now, updated_at=now)
+producer = DBProducer(pk=producer_id, name="test1", created_at=now, updated_at=now)
 producers = [producer for _ in range(3)]
 
 
@@ -143,7 +136,7 @@ async def test_list_with_negative_offset_raises_value_error(mock: AsyncMock):
 @patch.object(Repo, "insert_one", return_value=producer)
 async def test_create_with_valid_payload_return_created_instance(mock: AsyncMock):
     data = {"name": "test"}
-    r = await Service(None).create(CreateProducer(**data))
+    r = await Service(None).create(MockProducer(**data))
     mock.assert_awaited_once_with(**data)
     assert isinstance(r, Producer)
 
@@ -155,7 +148,7 @@ async def test_create_with_extra_attribute_raises_extra_arg_error(_):
 
 
 @pytest.mark.xfail(raises=InvalidArgumentTypeError, strict=True)
-@patch.object(Repo, "insert_one", side_effect=DBAPIError)
+@patch.object(Repo, "insert_one", side_effect=DBAPIError(None, None, Exception))
 async def test_create_with_invalid_attribute_type_raises_invalid_arg_type_error(_):
     await Service(None).create(MockProducer(name=1234))
 
@@ -175,14 +168,14 @@ async def test_create_duplicate_payload_raises_duplicate_error(_):
 @patch.object(Repo, "fetch_one_by_pk", return_value=producer)
 async def test_get_with_existing_id_return_producer_object(mock: AsyncMock):
     r = await Service(None).get(producer_id)
-    mock.assert_awaited_once_with(producer_id)
+    mock.assert_awaited_once_with(pk=producer_id)
     assert isinstance(r, Producer)
 
 
 @patch.object(Repo, "fetch_one_by_pk", return_value=None)
 async def test_get_with_id_does_not_exist_return_none(mock: AsyncMock):
     r = await Service(None).get(producer_id)
-    mock.assert_awaited_once_with(producer_id)
+    mock.assert_awaited_once_with(pk=producer_id)
     assert r is None
 
 
@@ -236,3 +229,20 @@ async def test_update_with_duplicate_payload_raises_duplicate_error(mock: AsyncM
 @patch.object(Repo, "update_one_by_pk")
 async def test_update_with_empty_data_raises_value_errror(mock: AsyncMock):
     await Service(None).update(producer_id, MockProducer())
+
+
+@patch.object(Repo, "delete", return_value=1)
+async def test_delete_existing_producer_return_true(mock: AsyncMock):
+    r = await Service(None).delete(producer_id)
+    mock.assert_awaited_once()
+    db_filter,*_ = mock.await_args.args
+    assert db_filter.compare(DBProducer.pk==producer_id)
+    assert r is True
+
+@patch.object(Repo, "delete", return_value=0)
+async def test_delete_producer_does_not_exist_return_false(mock: AsyncMock):
+    r = await Service(None).delete(producer_id)
+    mock.assert_awaited_once()
+    db_filter,*_ = mock.await_args.args
+    assert db_filter.compare(DBProducer.pk==producer_id)
+    assert r is False

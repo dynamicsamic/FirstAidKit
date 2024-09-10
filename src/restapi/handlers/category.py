@@ -41,7 +41,7 @@ async def list_categories(
     pks: list[int] | None = IdsParam,
     names: list[str] | None = NamesParam,
 ) -> list[Category]:
-    return await service.list(
+    return await service.list_items(
         limit=limit,
         offset=offset,
         created_before=created_before,

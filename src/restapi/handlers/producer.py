@@ -41,7 +41,7 @@ async def list_producers(
     pks: list[int] | None = IdsParam,
     names: list[str] | None = NamesParam,
 ) -> list[Producer]:
-    return await service.list(
+    return await service.list_items(
         limit=limit,
         offset=offset,
         created_before=created_before,

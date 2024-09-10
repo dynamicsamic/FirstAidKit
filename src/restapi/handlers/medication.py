@@ -50,7 +50,7 @@ async def list_medications(
     producer_ids: list[int] | None = ProducerIdsParam,
     category_ids: list[int] | None = CategoryIdsParam,
 ) -> list[Medication]:
-    return await service.list(
+    return await service.list_items(
         limit=limit,
         offset=offset,
         created_before=created_before,

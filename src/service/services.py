@@ -1,6 +1,7 @@
 from typing import Any, Iterable, Type, override
 
 from sqlalchemy.exc import CompileError, DBAPIError, IntegrityError
+from sqlalchemy.sql._typing import _ColumnExpressionArgument
 
 from src.data.repository import (
     CategoryRepository,
@@ -20,6 +21,7 @@ from src.domain.models import (
     PatchProducer,
     Producer,
 )
+from src.settings import settings
 
 from .exceptions import DuplicateError, ExtraArgumentError, InvalidArgumentTypeError
 
@@ -31,9 +33,14 @@ class Service:
     def __init__(self, db_session):
         self.repo = self.repo_type(db_session)
 
-    async def list(
+    async def list_items(
         self, limit: int, offset: int, **filters: dict[str, Any]
     ) -> list[BaseModel]:
+        if offset < 0 or limit < 1 or limit > settings.PAGINATION_LIMIT:
+            raise ValueError(
+                "Offset must be greater or equal to 0. Limit must be greater or eqaul "
+                f"to 1 and less then or equal to {settings.PAGINATION_LIMIT}."
+            )
         filters = self.parse_filters(filters)
         items = await self.repo.fetch_many(
             *filters, order_by=[self.repo.model.pk], limit=limit, offset=offset
@@ -75,7 +82,9 @@ class Service:
     async def delete(self, pk: Any) -> bool:
         return await self.repo.delete(self.repo.model.pk == pk)
 
-    def parse_filters(self, filters: dict[str, Any]) -> dict[str, Any]:
+    def parse_filters(
+        self, filters: dict[str, Any]
+    ) -> list[_ColumnExpressionArgument[bool]]:
         validated = []
 
         if created_before := filters.pop("created_before", None):
@@ -85,7 +94,7 @@ class Service:
             validated.append(self.repo.model.created_at > created_after)
 
         if updated_before := filters.pop("updated_before", None):
-            validated.append(self.repo.model.updated_at > updated_before)
+            validated.append(self.repo.model.updated_at < updated_before)
 
         if updated_after := filters.pop("updated_after", None):
             validated.append(self.repo.model.updated_at > updated_after)
@@ -94,9 +103,20 @@ class Service:
             if v is None or (attr := getattr(self.repo.model, k, None)) is None:
                 continue
 
+            attr_type = attr.type.python_type
             if isinstance(v, Iterable):
+                if not all(isinstance(i, attr_type) for i in v):
+                    raise ValueError(
+                        f"Provided filter values {v} do not match database "
+                        f"column {attr} type. Column type is {attr_type}."
+                    )
                 validated.append(attr.in_(v))
             else:
+                if not isinstance(v, attr_type):
+                    raise ValueError(
+                        f"Provided filter value {v} do not match database "
+                        f"column {attr} type. Column type is {attr_type}."
+                    )
                 validated.append(attr == v)
 
         return validated
@@ -107,10 +127,10 @@ class ProducerService(Service):
     model_type = Producer
 
     @override
-    async def list(
+    async def list_items(
         self, limit: int, offset: int, **filters: dict[str, Any]
     ) -> list[Producer]:
-        return await super().list(limit=limit, offset=offset, **filters)
+        return await super().list_items(limit=limit, offset=offset, **filters)
 
     @override
     async def create(self, data: CreateProducer) -> Producer:
@@ -134,10 +154,10 @@ class CategoryService(Service):
     model_type = Category
 
     @override
-    async def list(
+    async def list_items(
         self, limit: int, offset: int, **filters: dict[str, Any]
     ) -> list[Category]:
-        return await super().list(limit=limit, offset=offset, **filters)
+        return await super().list_items(limit=limit, offset=offset, **filters)
 
     @override
     async def create(self, data: CreateCategory) -> Category:
@@ -161,10 +181,10 @@ class MedicationService(Service):
     model_type = Medication
 
     @override
-    async def list(
+    async def list_items(
         self, limit: int, offset: int, **filters: dict[str, Any]
     ) -> list[Medication]:
-        return await super().list(limit=limit, offset=offset, **filters)
+        return await super().list_items(limit=limit, offset=offset, **filters)
 
     @override
     async def create(self, data: CreateMedication) -> Medication:

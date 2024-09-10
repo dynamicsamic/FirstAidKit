@@ -82,7 +82,7 @@ class Service:
         return self.model_type.model_validate(updated) if updated is not None else None
 
     async def delete(self, pk: Any) -> bool:
-        return await self.repo.delete(self.repo.model.pk == pk)
+        return bool(await self.repo.delete(self.repo.model.pk == pk))
 
     def parse_filters(
         self, filters: dict[str, Any]

@@ -32,7 +32,7 @@ async def test_client():
         yield client
 
 
-@patch.object(CategoryService, "list", return_value=categories)
+@patch.object(CategoryService, "list_items", return_value=categories)
 async def test_list_categories_without_query_args_uses_default_values(
     mock: AsyncMock, test_client: AsyncTestClient
 ):
@@ -54,7 +54,7 @@ async def test_list_categories_without_query_args_uses_default_values(
     assert all(Category.model_validate(CategoryJSONResponse(**item)) for item in body)
 
 
-@patch.object(CategoryService, "list", return_value=categories)
+@patch.object(CategoryService, "list_items", return_value=categories)
 async def test_list_categories_with_query_args_uses_provided_args(
     mock: AsyncMock, test_client: AsyncTestClient
 ):
@@ -90,7 +90,7 @@ async def test_list_categories_with_query_args_uses_provided_args(
     assert all(Category.model_validate(CategoryJSONResponse(**item)) for item in body)
 
 
-@patch.object(CategoryService, "list", return_value=[])
+@patch.object(CategoryService, "list_items", return_value=[])
 async def test_list_categories_with_empty_service_response(
     mock: AsyncMock, test_client: AsyncTestClient
 ):
@@ -101,7 +101,7 @@ async def test_list_categories_with_empty_service_response(
     assert resp.json() == []
 
 
-@patch.object(CategoryService, "list", return_value=categories)
+@patch.object(CategoryService, "list_items", return_value=categories)
 async def test_list_categories_with_extra_query_arg_is_ignored(
     mock: AsyncMock, test_client: AsyncTestClient
 ):
@@ -112,7 +112,7 @@ async def test_list_categories_with_extra_query_arg_is_ignored(
     assert "extra" not in mock.await_args.kwargs
 
 
-@patch.object(CategoryService, "list")
+@patch.object(CategoryService, "list_items")
 async def test_list_categories_with_invalid_query_arg_type_return_400_status(
     mock: AsyncMock, test_client: AsyncTestClient
 ):
@@ -124,7 +124,7 @@ async def test_list_categories_with_invalid_query_arg_type_return_400_status(
     assert set(body.keys()) == {"status_code", "detail", "extra"}
 
 
-@patch.object(CategoryService, "list")
+@patch.object(CategoryService, "list_items")
 async def test_list_categories_with_negative_limit_return_400_status(
     mock: AsyncMock, test_client: AsyncTestClient
 ):
@@ -136,7 +136,7 @@ async def test_list_categories_with_negative_limit_return_400_status(
     assert set(body.keys()) == {"status_code", "detail", "extra"}
 
 
-@patch.object(CategoryService, "list")
+@patch.object(CategoryService, "list_items")
 async def test_list_categories_with_limit_too_high_return_400_status(
     mock: AsyncMock, test_client: AsyncTestClient
 ):

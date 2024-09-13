@@ -1,4 +1,4 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from zoneinfo import ZoneInfo
 
 
@@ -14,6 +14,8 @@ class DevSettings(BaseSettings):
     DB_PORT: int = 5432
 
 class ProdSettings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env")
+
     TZ: ZoneInfo = ZoneInfo("Europe/Moscow")
     DEBUG: bool = True
     ITEMS_PER_PAGE: int = 20

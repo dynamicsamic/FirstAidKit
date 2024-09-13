@@ -2,6 +2,7 @@ import pytest
 import pytest_asyncio
 from sqlalchemy import insert
 from sqlalchemy.engine.result import ScalarResult
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import DetachedInstanceError
 
 from src.data.models import Category, Medication, Producer
@@ -78,3 +79,16 @@ async def test_fetch_many_return_medications_with_producer_and_category_names():
         and isinstance(i.category.pk, int)
         for i in items
     )
+
+
+@pytest.mark.xfail(raises=IntegrityError, strict=True)
+async def test_insert_medication_breaking_unique_constraint_raises_error():
+    async with sessionmaker() as session:
+        data = {
+            "brand_name": "br_name1",
+            "generic_name": "gen_name1",
+            "dosage_form": DosageForm.TABLET,
+            "producer_id": 1,
+            "category_id": 1,
+        }
+        await Repo(session).insert_one(**data)

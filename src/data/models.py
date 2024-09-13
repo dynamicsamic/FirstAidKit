@@ -1,16 +1,18 @@
-from datetime import datetime
-from typing import Generator
+from datetime import date, datetime
+from typing import Optional
 
 from sqlalchemy import DateTime, Enum, ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from src.domain.constraints import (
+    AIDKIT_LOCATION_LENTH,
+    AIDKIT_NAME_LENGTH,
     CATEGORY_NAME_LENGTH,
     MEDICATION_BRAND_NAME_LENGTH,
     MEDICATION_GENERIC_NAME_LENGTH,
     PRODUCER_NAME_LENGTH,
 )
-from src.domain.types import DosageForm
+from src.domain.types import DosageForm, MeasureUnit
 from src.utils import now
 
 
@@ -32,8 +34,7 @@ class Producer(BaseModel):
     __tablename__ = "producers"
 
     name: Mapped[str] = mapped_column(String(PRODUCER_NAME_LENGTH), unique=True)
-    # meds: Mapped[list["Medication"]] = relationship(back_populates="producer", lazy="noload")
-    meds: Mapped[Generator["Medication", None, None]] = relationship(
+    meds: Mapped[list["Medication"]] = relationship(
         back_populates="producer", lazy="noload"
     )
 
@@ -42,7 +43,7 @@ class Category(BaseModel):
     __tablename__ = "categories"
 
     name: Mapped[str] = mapped_column(String(CATEGORY_NAME_LENGTH), unique=True)
-    meds: Mapped[Generator["Medication", None, None]] = relationship(
+    meds: Mapped[list["Medication"]] = relationship(
         back_populates="category", lazy="noload"
     )
 
@@ -55,12 +56,63 @@ class Medication(BaseModel):
     dosage_form: Mapped[Enum] = mapped_column(
         Enum(DosageForm, create_constraint=True, validate_string=True)
     )
+
+    # Relations
     producer_id: Mapped[int] = mapped_column(
         ForeignKey(Producer.pk, ondelete="SET NULL"), nullable=True
-    )  # refactor later
-    producer: Mapped[Producer] = relationship(back_populates="meds", lazy="noload")
+    )
     category_id: Mapped[int] = mapped_column(
         ForeignKey(Category.pk, ondelete="SET NULL"), nullable=True
-    )  # refactor later
+    )
+
+    producer: Mapped[Producer] = relationship(back_populates="meds", lazy="noload")
     category: Mapped[Category] = relationship(back_populates="meds", lazy="noload")
+    stocks: Mapped[list["MedicationStock"]] = relationship(
+        back_populates="medication",
+        lazy="noload",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
+    # Constraints
     UniqueConstraint(brand_name, dosage_form, producer_id)
+
+
+class AidKit(BaseModel):
+    __tablename__ = "aidkits"
+
+    name: Mapped[str] = mapped_column(String(length=AIDKIT_NAME_LENGTH), unique=True)
+    location: Mapped[str] = mapped_column(
+        String(length=AIDKIT_LOCATION_LENTH), nullable=True
+    )
+
+    # Relations
+    meds: Mapped[list["MedicationStock"]] = relationship(
+        back_populates="aidkit",
+        lazy="noload",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
+
+class MedicationStock(BaseModel):
+    __tablename__ = "stocks"
+
+    quantity: Mapped[int]
+    measure_unit: Mapped[Enum] = mapped_column(
+        Enum(MeasureUnit, create_constraint=True, validate_string=True)
+    )
+    production_date: Mapped[date]
+    best_before: Mapped[date]
+    opened_at: Mapped[Optional[date]]
+
+    # Realtions
+    medication_id: Mapped[int] = mapped_column(
+        ForeignKey(Medication.pk, ondelete="CASCADE")
+    )
+    aidkit_id: Mapped[int] = mapped_column(ForeignKey(AidKit.pk, ondelete="CASCADE"))
+
+    medication: Mapped[Medication] = relationship(
+        back_populates="stocks", lazy="noload"
+    )
+    aidkit: Mapped[AidKit] = relationship(back_populates="meds", lazy="noload")

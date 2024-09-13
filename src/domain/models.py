@@ -5,12 +5,14 @@ from pydantic import BaseModel as _BaseModel
 from pydantic import ConfigDict, Field, model_validator
 
 from .constraints import (
+    AIDKIT_LOCATION_LENTH,
+    AIDKIT_NAME_LENGTH,
     CATEGORY_NAME_LENGTH,
     MEDICATION_BRAND_NAME_LENGTH,
     MEDICATION_GENERIC_NAME_LENGTH,
     PRODUCER_NAME_LENGTH,
 )
-from .types import DosageForm, MeasureUnit, PositiveFloat, PositiveInt
+from .types import DosageForm, MeasureUnit, PositiveInt
 
 
 class NonEmptyUpdateMixin:
@@ -98,10 +100,41 @@ class PatchMedication(BaseModel, NonEmptyUpdateMixin):
     updated_at: datetime | None = None
 
 
-class MedicationStock(BaseModel):
-    medication_id: PositiveInt
-    quantity: PositiveFloat
+class CreateMedicationStock(BaseModel):
+    quantity: PositiveInt
     measure_unit: MeasureUnit
     production_date: date
     best_before: date
-    start_consuming_at: datetime | None = None
+    opened_at: date | None = None
+
+    medication_id: PositiveInt
+    aidkit_id: PositiveInt
+
+
+class MedicationStock(CreateMedication, PkDatetimeAttrsMixin):
+    pass
+
+
+class PatchMedicationStock(BaseModel, NonEmptyUpdateMixin):
+    quantity: PositiveInt | None = None
+    measure_unit: MeasureUnit | None = None
+    production_date: date | None = None
+    best_before: date | None = None
+    opened_at: date | None = None
+
+    medication_id: PositiveInt | None = None
+    aidkit_id: PositiveInt | None = None
+
+
+class CreateAidKit(BaseModel):
+    name: Annotated[str, Field(max_length=AIDKIT_NAME_LENGTH)]
+    location: Annotated[str, Field(max_length=AIDKIT_LOCATION_LENTH)] | None = None
+
+
+class AidKit(CreateAidKit, PkDatetimeAttrsMixin):
+    medications: list[MedicationStock] | None = None
+
+
+class PatchAidKit(BaseModel, NonEmptyUpdateMixin):
+    name: Annotated[str, Field(max_length=AIDKIT_NAME_LENGTH)] | None
+    location: Annotated[str, Field(max_length=AIDKIT_LOCATION_LENTH)] | None = None

@@ -3,14 +3,14 @@ from typing import Any, Iterable, Type
 from sqlalchemy import Select, SQLColumnExpression, delete, insert, select, text, update
 from sqlalchemy.engine import CursorResult, Result, ScalarResult
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload, load_only
+from sqlalchemy.orm import contains_eager, defer, joinedload, load_only
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.sql._typing import _ColumnExpressionArgument
 from sqlalchemy.sql.base import Executable, ExecutableOption
 
 from src.settings import settings
 
-from .models import BaseModel, Category, Medication, Producer
+from .models import AidKit, BaseModel, Category, Medication, MedicationStock, Producer
 
 
 class Repository:
@@ -147,4 +147,77 @@ class MedicationRepository(Repository):
                     load_only(Category.name, Category.pk)
                 ),
             ),
+        )
+
+
+class AidKitRepository(Repository):
+    model = AidKit
+
+    async def fetch_one_by_any(
+        self,
+        *filters: _ColumnExpressionArgument[bool],
+        order_by: Iterable[InstrumentedAttribute] = None,
+        stock_limit: int = settings.ITEMS_PER_PAGE,
+        stock_offset: int = 0,
+        stock_order_by: Iterable[InstrumentedAttribute] = None,
+    ) -> AidKit | None:
+        order_by = order_by or [AidKit.created_at]
+        stock_order_by = stock_order_by or [MedicationStock.created_at]
+
+        # Select stocks in subquery to apply custom limit, offset and ordering.
+        stocks_query = (
+            select(MedicationStock)
+            .where(
+                MedicationStock.aidkit_id == AidKit.pk,
+                MedicationStock.pk > stock_offset,
+            )
+            .order_by(*stock_order_by)
+            .limit(stock_limit)
+            .subquery("aidkit_stock")
+            .lateral()
+        )
+
+        # Join aidkit, stocks, medications, producers and categories.
+        # Defer loading columns with repeating data.
+        qry = (
+            select(AidKit)
+            .where(*filters)
+            .order_by(*order_by)
+            .outerjoin(stocks_query)
+            .options(
+                contains_eager(AidKit.stocks, alias=stocks_query).options(
+                    joinedload(MedicationStock.medication).options(
+                        defer(Medication.producer_id),
+                        defer(Medication.category_id),
+                        defer(Medication.created_at),
+                        defer(Medication.updated_at),
+                        joinedload(Medication.producer).options(
+                            load_only(Producer.name, Producer.pk)
+                        ),
+                        joinedload(Medication.category).options(
+                            load_only(Category.name, Category.pk)
+                        ),
+                    ),
+                    defer(MedicationStock.aidkit_id),
+                    defer(MedicationStock.medication_id),
+                    defer(MedicationStock.created_at),
+                    defer(MedicationStock.updated_at),
+                )
+            )
+        )
+
+        return (await self.session.scalars(qry)).unique().first()
+
+    async def fetch_one_by_pk(
+        self,
+        pk: int,
+        stock_limit: int = settings.ITEMS_PER_PAGE,
+        stock_offset: int = 0,
+        stock_order_by: Iterable[InstrumentedAttribute] = None,
+    ) -> AidKit | None:
+        return await self.fetch_one_by_any(
+            self.model.pk == pk,
+            stock_limit=stock_limit,
+            stock_offset=stock_offset,
+            stock_order_by=stock_order_by,
         )

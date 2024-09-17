@@ -87,7 +87,7 @@ class AidKit(BaseModel):
     )
 
     # Relations
-    meds: Mapped[list["MedicationStock"]] = relationship(
+    stocks: Mapped[list["MedicationStock"]] = relationship(
         back_populates="aidkit",
         lazy="noload",
         cascade="all, delete-orphan",
@@ -115,4 +115,4 @@ class MedicationStock(BaseModel):
     medication: Mapped[Medication] = relationship(
         back_populates="stocks", lazy="noload"
     )
-    aidkit: Mapped[AidKit] = relationship(back_populates="meds", lazy="noload")
+    aidkit: Mapped[AidKit] = relationship(back_populates="stocks", lazy="noload")

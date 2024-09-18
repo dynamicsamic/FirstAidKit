@@ -132,7 +132,7 @@ class CreateAidKit(BaseModel):
 
 
 class AidKit(CreateAidKit, PkDatetimeAttrsMixin):
-    medications: list[MedicationStock] | None = None
+    stock_count: PositiveInt
 
 
 class PatchAidKit(BaseModel, NonEmptyUpdateMixin):

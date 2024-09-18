@@ -1,8 +1,22 @@
 from datetime import date, datetime
 from typing import Optional
 
-from sqlalchemy import DateTime, Enum, ForeignKey, String, UniqueConstraint
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy import (
+    DateTime,
+    Enum,
+    ForeignKey,
+    String,
+    UniqueConstraint,
+    func,
+    select,
+)
+from sqlalchemy.orm import (
+    DeclarativeBase,
+    Mapped,
+    column_property,
+    mapped_column,
+    relationship,
+)
 
 from src.domain.constraints import (
     AIDKIT_LOCATION_LENTH,
@@ -78,23 +92,6 @@ class Medication(BaseModel):
     UniqueConstraint(brand_name, dosage_form, producer_id)
 
 
-class AidKit(BaseModel):
-    __tablename__ = "aidkits"
-
-    name: Mapped[str] = mapped_column(String(length=AIDKIT_NAME_LENGTH), unique=True)
-    location: Mapped[str] = mapped_column(
-        String(length=AIDKIT_LOCATION_LENTH), nullable=True
-    )
-
-    # Relations
-    stocks: Mapped[list["MedicationStock"]] = relationship(
-        back_populates="aidkit",
-        lazy="noload",
-        cascade="all, delete-orphan",
-        passive_deletes=True,
-    )
-
-
 class MedicationStock(BaseModel):
     __tablename__ = "stocks"
 
@@ -106,13 +103,41 @@ class MedicationStock(BaseModel):
     best_before: Mapped[date]
     opened_at: Mapped[Optional[date]]
 
-    # Realtions
+    # Relations
     medication_id: Mapped[int] = mapped_column(
         ForeignKey(Medication.pk, ondelete="CASCADE")
     )
-    aidkit_id: Mapped[int] = mapped_column(ForeignKey(AidKit.pk, ondelete="CASCADE"))
+    aidkit_id: Mapped[int] = mapped_column(ForeignKey("aidkits.pk", ondelete="CASCADE"))
 
     medication: Mapped[Medication] = relationship(
         back_populates="stocks", lazy="noload"
     )
-    aidkit: Mapped[AidKit] = relationship(back_populates="stocks", lazy="noload")
+    aidkit: Mapped["AidKit"] = relationship(back_populates="stocks", lazy="noload")
+
+
+class AidKit(BaseModel):
+    __tablename__ = "aidkits"
+
+    pk: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(length=AIDKIT_NAME_LENGTH), unique=True)
+    location: Mapped[str] = mapped_column(
+        String(length=AIDKIT_LOCATION_LENTH), nullable=True
+    )
+
+    # Computed field.
+    # Adds SELECT count(stocks.id) FROM stocks WHERE stocks.aidkit_id = aidkit.pk
+    # to SELECT aidkit query.
+    stock_count: Mapped[int] = column_property(
+        select(func.count(MedicationStock.pk))
+        .where(MedicationStock.aidkit_id == pk)
+        .correlate_except(MedicationStock)
+        .scalar_subquery()
+    )
+
+    # Relations
+    stocks: Mapped[list[MedicationStock]] = relationship(
+        back_populates="aidkit",
+        lazy="noload",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )

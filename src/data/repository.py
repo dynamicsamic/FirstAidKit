@@ -3,7 +3,7 @@ from typing import Any, Iterable, Type
 from sqlalchemy import Select, SQLColumnExpression, delete, insert, select, text, update
 from sqlalchemy.engine import CursorResult, Result, ScalarResult
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import contains_eager, defer, joinedload, load_only
+from sqlalchemy.orm import contains_eager, joinedload, load_only
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.sql._typing import _ColumnExpressionArgument
 from sqlalchemy.sql.base import Executable, ExecutableOption
@@ -186,22 +186,34 @@ class AidKitRepository(Repository):
             .outerjoin(stocks_query)
             .options(
                 contains_eager(AidKit.stocks, alias=stocks_query).options(
+                    load_only(
+                        MedicationStock.pk,
+                        MedicationStock.quantity,
+                        MedicationStock.measure_unit,
+                        MedicationStock.production_date,
+                        MedicationStock.best_before,
+                        MedicationStock.opened_at,
+                    ),
                     joinedload(MedicationStock.medication).options(
-                        defer(Medication.producer_id),
-                        defer(Medication.category_id),
-                        defer(Medication.created_at),
-                        defer(Medication.updated_at),
+                        load_only(
+                            Medication.pk,
+                            Medication.brand_name,
+                            Medication.generic_name,
+                            Medication.dosage_form,
+                        ),
                         joinedload(Medication.producer).options(
-                            load_only(Producer.name, Producer.pk)
+                            load_only(
+                                Producer.pk,
+                                Producer.name,
+                            )
                         ),
                         joinedload(Medication.category).options(
-                            load_only(Category.name, Category.pk)
+                            load_only(
+                                Category.pk,
+                                Category.name,
+                            )
                         ),
                     ),
-                    defer(MedicationStock.aidkit_id),
-                    defer(MedicationStock.medication_id),
-                    defer(MedicationStock.created_at),
-                    defer(MedicationStock.updated_at),
                 )
             )
         )

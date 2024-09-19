@@ -4,18 +4,22 @@ from sqlalchemy.exc import CompileError, DBAPIError, IntegrityError
 from sqlalchemy.sql._typing import _ColumnExpressionArgument
 
 from src.data.repository import (
+    AidKitRepository,
     CategoryRepository,
     MedicationRepository,
     ProducerRepository,
     Repository,
 )
 from src.domain.models import (
+    AidKit,
     BaseModel,
     Category,
+    CreateAidKit,
     CreateCategory,
     CreateMedication,
     CreateProducer,
     Medication,
+    PatchAidKit,
     PatchCategory,
     PatchMedication,
     PatchProducer,
@@ -205,3 +209,30 @@ class MedicationService(Service):
     @override
     async def delete(self, medication_id: int) -> bool:
         return await super().delete(pk=medication_id)
+
+
+class AidKitService(Service):
+    repo_type = AidKitRepository
+    model_type = AidKit
+
+    @override
+    async def list_items(
+        self, limit: int, offset: int, **filters: dict[str, Any]
+    ) -> list[AidKit]:
+        return await super().list_items(limit=limit, offset=offset, **filters)
+
+    @override
+    async def create(self, data: CreateAidKit) -> AidKit:
+        return await super().create(data=data)
+
+    @override
+    async def get(self, aidkit_id: int) -> AidKit | None:
+        return await super().get(pk=aidkit_id)
+
+    @override
+    async def update(self, aidkit_id: int, data: PatchAidKit) -> AidKit | None:
+        return await super().update(pk=aidkit_id, data=data)
+
+    @override
+    async def delete(self, aidkit_id: int) -> bool:
+        return await super().delete(pk=aidkit_id)

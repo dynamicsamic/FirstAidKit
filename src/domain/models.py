@@ -24,7 +24,7 @@ class NonEmptyUpdateMixin:
         return data
 
 
-class PkDatetimeAttrsMixin:
+class PkDatetimeAttrsMixin(_BaseModel):
     pk: PositiveInt
     created_at: datetime
     updated_at: datetime

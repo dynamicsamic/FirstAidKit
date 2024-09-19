@@ -34,7 +34,7 @@ IdsParam = Parameter(
     query="ids",
     required=False,
     default=None,
-    examples=[Example(summary="example-1", value="names=FirstName&names=AnotherName")],
+    examples=[Example(summary="example-1", value="ids=FirstName&ids=AnotherName")],
 )
 NamesParam = Parameter(
     required=False,
@@ -46,21 +46,28 @@ BrandNamesParam = Parameter(
     query="brandNames",
     required=False,
     default=None,
-    examples=[Example(summary="example-1", value="brandNames=CoolTabs300mg")]
+    examples=[Example(summary="example-1", value="brandNames=CoolTabs300mg")],
 )
 GenericNamesParam = Parameter(
     list[str],
     query="genericNames",
     required=False,
     default=None,
-    examples=[Example(summary="example-1", value="genericNames=NikotinAcid&genericNames=GreenMixture")]
+    examples=[
+        Example(
+            summary="example-1",
+            value="genericNames=NikotinAcid&genericNames=GreenMixture",
+        )
+    ],
 )
 DosageFormsParam = Parameter(
     list[DosageForm],
     query="dosageForms",
     required=False,
     default=None,
-    examples=[Example(summary="example-1", value="dosageForms=tablet&dosageForms=mixture")]
+    examples=[
+        Example(summary="example-1", value="dosageForms=tablet&dosageForms=mixture")
+    ],
 )
 ProducerIdsParam = Parameter(
     list[int],
@@ -75,4 +82,11 @@ CategoryIdsParam = Parameter(
     required=False,
     default=None,
     examples=[Example(summary="example-1", value="categoryIds=1&categoryIds=2")],
+)
+LocationsParam = Parameter(
+    list[str],
+    query="locations",
+    required=False,
+    default=None,
+    examples=[Example(summary="example-1", value="locations=1&locations=2")],
 )

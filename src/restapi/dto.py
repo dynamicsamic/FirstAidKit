@@ -4,11 +4,14 @@ from litestar.contrib.pydantic import PydanticDTO
 from litestar.dto import DTOConfig
 
 from src.domain.models import (
+    AidKit,
     Category,
+    CreateAidKit,
     CreateCategory,
     CreateMedication,
     CreateProducer,
     Medication,
+    PatchAidKit,
     PatchCategory,
     PatchMedication,
     PatchProducer,
@@ -58,4 +61,15 @@ PatchMedicationDTO = PydanticDTO[
         PatchMedication,
         DTOConfig(forbid_unknown_fields=True),
     ]
+]
+
+AidKitDTO = PydanticDTO[
+    Annotated[
+        AidKit,
+        DTOConfig(rename_fields={"pk": "aidKitId"}, rename_strategy="camel"),
+    ]
+]
+CreateAidKitDTO = PydanticDTO[CreateAidKit]
+PatchAidKitDTO = PydanticDTO[
+    Annotated[PatchAidKit, DTOConfig(forbid_unknown_fields=True)]
 ]
